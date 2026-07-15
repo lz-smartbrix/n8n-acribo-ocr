@@ -1,0 +1,407 @@
+{
+  "name": "OCR Reporting",
+  "nodes": [
+    {
+      "parameters": {
+        "operation": "xlsx",
+        "options": {
+          "fileName": "={{ \"Smartbrix_OCR_Report_KW\" +\n   $now.minus({ weeks: 1 }).weekNumber +\n   \"_\" +\n   $now.year +\n   \".xlsx\" }}"
+        }
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        144,
+        -160
+      ],
+      "id": "fded3311-58df-4173-b717-53df736912bd",
+      "name": "Convert to File"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "3EZHkYswDkV3030Y",
+          "mode": "list",
+          "cachedResultName": "n8n_invoice_ocr_reporting",
+          "cachedResultUrl": "/projects/OrX0COEJWZYXeBir/datatables/3EZHkYswDkV3030Y"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "createdAt",
+              "condition": "gte",
+              "keyValue": "={{ $now.startOf('week').minus({ weeks: 1 }).toISO() }}"
+            },
+            {
+              "keyName": "createdAt",
+              "condition": "lt",
+              "keyValue": "={{ $now.startOf('week').toISO() }}"
+            }
+          ]
+        },
+        "returnAll": true,
+        "orderBy": true,
+        "orderByDirection": "ASC"
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        -176,
+        -160
+      ],
+      "id": "e806fd22-b54e-4cca-a3aa-89ecc1282b57",
+      "name": "Get last week"
+    },
+    {
+      "parameters": {
+        "toRecipients": "lennart.zimmermann@opaas.cloud",
+        "subject": "=Smartbrix OCR Wochenreport KW ={{ $now.minus({ weeks: 1 }).weekNumber }}",
+        "additionalFields": {
+          "attachments": {
+            "attachments": [
+              {
+                "binaryPropertyName": "data"
+              }
+            ]
+          }
+        },
+        "bodyContent": "Anbei der wöchentliche OCR-Report für Acribo Eingangsrechnungen.\n\nDer Report enthält pro Anhang eine Zeile (neue Spalte: Anhang-ID) sowie eine Zusammenfassung nach Ziel-Postfach und Fallback-Gründen.\n\nBerichtszeitraum: Kalenderwoche ={{ $now.minus({ weeks: 1 }).weekNumber }}"
+      },
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        416,
+        -384
+      ],
+      "id": "52197865-523a-4cd8-8f0f-b767e1c1d468",
+      "name": "Send to Lennart Zimmermann",
+      "webhookId": "fe077bdb-ca7f-4984-ae25-91acf6d986e7",
+      "credentials": {
+        "microsoftOutlookOAuth2Api": {
+          "id": "Pydw2OiP5zm2Xqv9",
+          "name": "acribo-ocr@smartbrix.io"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toRecipients": "justin.jalayer@smartbrix.io",
+        "subject": "=Smartbrix OCR Wochenreport KW ={{ $now.minus({ weeks: 1 }).weekNumber }}",
+        "additionalFields": {
+          "attachments": {
+            "attachments": [
+              {
+                "binaryPropertyName": "data"
+              }
+            ]
+          }
+        },
+        "bodyContent": "Anbei der wöchentliche OCR-Report für Acribo Eingangsrechnungen.\n\nDer Report enthält pro Anhang eine Zeile (neue Spalte: Anhang-ID) sowie eine Zusammenfassung nach Ziel-Postfach und Fallback-Gründen.\n\nBerichtszeitraum: Kalenderwoche ={{ $now.minus({ weeks: 1 }).weekNumber }}"
+      },
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        416,
+        -160
+      ],
+      "id": "d21c1bfe-8cbc-4be9-a86c-9621337383c0",
+      "name": "Send to Justin Jalayer",
+      "webhookId": "fe077bdb-ca7f-4984-ae25-91acf6d986e7",
+      "credentials": {
+        "microsoftOutlookOAuth2Api": {
+          "id": "Pydw2OiP5zm2Xqv9",
+          "name": "acribo-ocr@smartbrix.io"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtDay": [
+                1
+              ]
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -480,
+        -160
+      ],
+      "id": "da243fb4-e655-47ce-9204-01cd89c439ed",
+      "name": "Weekly"
+    },
+    {
+      "parameters": {
+        "operation": "xlsx",
+        "options": {
+          "fileName": "={{ \"Smartbrix_OCR_Report_KW\" +\n   $now.minus({ weeks: 1 }).weekNumber +\n   \"_\" +\n   $now.year +\n   \".xlsx\" }}"
+        }
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        128,
+        528
+      ],
+      "id": "6d54b05a-5ad5-4740-a008-fb20bb130baf",
+      "name": "Convert to File1"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "3EZHkYswDkV3030Y",
+          "mode": "list",
+          "cachedResultName": "n8n_invoice_ocr_reporting",
+          "cachedResultUrl": "/projects/OrX0COEJWZYXeBir/datatables/3EZHkYswDkV3030Y"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "createdAt",
+              "condition": "gte",
+              "keyValue": "={{ $now.startOf('week').minus({ weeks: 1 }).toISO() }}"
+            },
+            {
+              "keyName": "createdAt",
+              "condition": "lt",
+              "keyValue": "={{ $now.startOf('week').toISO() }}"
+            }
+          ]
+        },
+        "returnAll": true,
+        "orderBy": true,
+        "orderByDirection": "ASC"
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        -192,
+        528
+      ],
+      "id": "aa8c684a-e192-4f88-8676-390478e26b13",
+      "name": "Get last week1"
+    },
+    {
+      "parameters": {
+        "toRecipients": "lennart.zimmermann@opaas.cloud",
+        "subject": "=Smartbrix OCR Wochenreport KW ={{ $now.minus({ weeks: 1 }).weekNumber }} (Test)",
+        "additionalFields": {
+          "attachments": {
+            "attachments": [
+              {
+                "binaryPropertyName": "data"
+              }
+            ]
+          }
+        },
+        "bodyContent": "Manuell ausgelöster Test-Report.\n\nEnthält Anhang-Details und Wochen-Zusammenfassung."
+      },
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        416,
+        528
+      ],
+      "id": "c65209d7-2736-494a-aacd-723f7bee864c",
+      "name": "Send to Lennart Zimmermann1",
+      "webhookId": "fe077bdb-ca7f-4984-ae25-91acf6d986e7",
+      "credentials": {
+        "microsoftOutlookOAuth2Api": {
+          "id": "Pydw2OiP5zm2Xqv9",
+          "name": "acribo-ocr@smartbrix.io"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toRecipients": "c.kroeger@acribo.com",
+        "subject": "=Smartbrix OCR Wochenreport KW ={{ $now.minus({ weeks: 1 }).weekNumber }}",
+        "additionalFields": {
+          "attachments": {
+            "attachments": [
+              {
+                "binaryPropertyName": "data"
+              }
+            ]
+          }
+        },
+        "bodyContent": "Anbei der wöchentliche OCR-Report für Acribo Eingangsrechnungen.\n\nDer Report enthält pro Anhang eine Zeile (neue Spalte: Anhang-ID) sowie eine Zusammenfassung nach Ziel-Postfach und Fallback-Gründen.\n\nBerichtszeitraum: Kalenderwoche ={{ $now.minus({ weeks: 1 }).weekNumber }}"
+      },
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        416,
+        48
+      ],
+      "id": "3df3e604-94ac-4b1a-b368-25df3522fa38",
+      "name": "Send to Cosima Kröger",
+      "webhookId": "fe077bdb-ca7f-4984-ae25-91acf6d986e7",
+      "credentials": {
+        "microsoftOutlookOAuth2Api": {
+          "id": "Pydw2OiP5zm2Xqv9",
+          "name": "acribo-ocr@smartbrix.io"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -464,
+        528
+      ],
+      "id": "f824bfa8-3284-4bee-a2d9-6bcf945a56dc",
+      "name": "When clicking ‘Execute workflow’",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nconst REASON_LABELS = {\n  ocr_failed: 'OCR fehlgeschlagen',\n  no_company_match: 'Keine Acribo-Gesellschaft erkannt',\n  no_valid_attachment: 'Kein PDF/P7M-Anhang',\n  p7m_extract_failed: 'P7M-Entpacken fehlgeschlagen',\n  decrypt_failed: 'Entschlüsselung fehlgeschlagen',\n};\n\nfunction toRow(j) {\n  return {\n    'Anhang-ID': j.attachment_id || j.mail_id || '',\n    'Mail-ID': j.mail_id || '',\n    'Dateiname': j.file_name || '',\n    'Absender': j.from || '',\n    'Betreff': j.subject || '',\n    'Weiterleitung an': j.forward_to || '',\n    'OCR-Status': j.ocr_status || '',\n    'Fallback-Grund': REASON_LABELS[j.fallback_reason] || j.fallback_reason || '',\n    'Erstellt am': j.createdAt || '',\n  };\n}\n\nfunction summaryLine(label, value) {\n  return { json: { 'Anhang-ID': label, 'Mail-ID': String(value ?? 0) } };\n}\n\nconst detailRows = items.map((item) => ({ json: toRow(item.json) }));\n\nconst completed = items.filter((i) => i.json.ocr_status !== 'processing');\nconst successful = completed.filter(\n  (i) => i.json.ocr_status === 'success' && !i.json.fallback_reason\n);\nconst fallbackItems = completed.filter(\n  (i) =>\n    i.json.fallback_reason ||\n    i.json.forward_to === 'fi@acribo.com' ||\n    ['failed', 'error'].includes(i.json.ocr_status)\n);\nconst uniqueMails = new Set(items.map((i) => i.json.mail_id).filter(Boolean));\nconst processing = items.filter((i) => i.json.ocr_status === 'processing');\n\nconst summary = [\n  { json: { 'Anhang-ID': '=== ZUSAMMENFASSUNG ===' } },\n  summaryLine('Anhänge gesamt', items.length),\n  summaryLine('E-Mails gesamt (unique)', uniqueMails.size),\n  summaryLine('Erfolgreich weitergeleitet', successful.length),\n  summaryLine('Fallback / Fehler', fallbackItems.length),\n  summaryLine('Noch in Verarbeitung', processing.length),\n  { json: { 'Anhang-ID': '=== PRO ZIEL-POSTFACH ===' } },\n];\n\nconst byForward = {};\ncompleted.forEach((i) => {\n  const key = i.json.forward_to || '(leer)';\n  byForward[key] = (byForward[key] || 0) + 1;\n});\nObject.entries(byForward)\n  .sort((a, b) => b[1] - a[1])\n  .forEach(([key, count]) => summary.push(summaryLine(key, count)));\n\nsummary.push({ json: { 'Anhang-ID': '=== FALLBACK-GRÜNDE ===' } });\nconst byReason = {};\ncompleted\n  .filter((i) => i.json.fallback_reason)\n  .forEach((i) => {\n    const key = i.json.fallback_reason;\n    byReason[key] = (byReason[key] || 0) + 1;\n  });\nif (Object.keys(byReason).length === 0) {\n  summary.push(summaryLine('(keine)', 0));\n} else {\n  Object.entries(byReason)\n    .sort((a, b) => b[1] - a[1])\n    .forEach(([key, count]) =>\n      summary.push(summaryLine(REASON_LABELS[key] || key, count))\n    );\n}\n\nreturn [...detailRows, { json: {} }, ...summary];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -16,
+        -160
+      ],
+      "id": "f1a2b3c4-d5e6-7890-abcd-report00001",
+      "name": "Prepare weekly report"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nconst REASON_LABELS = {\n  ocr_failed: 'OCR fehlgeschlagen',\n  no_company_match: 'Keine Acribo-Gesellschaft erkannt',\n  no_valid_attachment: 'Kein PDF/P7M-Anhang',\n  p7m_extract_failed: 'P7M-Entpacken fehlgeschlagen',\n  decrypt_failed: 'Entschlüsselung fehlgeschlagen',\n};\n\nfunction toRow(j) {\n  return {\n    'Anhang-ID': j.attachment_id || j.mail_id || '',\n    'Mail-ID': j.mail_id || '',\n    'Dateiname': j.file_name || '',\n    'Absender': j.from || '',\n    'Betreff': j.subject || '',\n    'Weiterleitung an': j.forward_to || '',\n    'OCR-Status': j.ocr_status || '',\n    'Fallback-Grund': REASON_LABELS[j.fallback_reason] || j.fallback_reason || '',\n    'Erstellt am': j.createdAt || '',\n  };\n}\n\nfunction summaryLine(label, value) {\n  return { json: { 'Anhang-ID': label, 'Mail-ID': String(value ?? 0) } };\n}\n\nconst detailRows = items.map((item) => ({ json: toRow(item.json) }));\n\nconst completed = items.filter((i) => i.json.ocr_status !== 'processing');\nconst successful = completed.filter(\n  (i) => i.json.ocr_status === 'success' && !i.json.fallback_reason\n);\nconst fallbackItems = completed.filter(\n  (i) =>\n    i.json.fallback_reason ||\n    i.json.forward_to === 'fi@acribo.com' ||\n    ['failed', 'error'].includes(i.json.ocr_status)\n);\nconst uniqueMails = new Set(items.map((i) => i.json.mail_id).filter(Boolean));\nconst processing = items.filter((i) => i.json.ocr_status === 'processing');\n\nconst summary = [\n  { json: { 'Anhang-ID': '=== ZUSAMMENFASSUNG ===' } },\n  summaryLine('Anhänge gesamt', items.length),\n  summaryLine('E-Mails gesamt (unique)', uniqueMails.size),\n  summaryLine('Erfolgreich weitergeleitet', successful.length),\n  summaryLine('Fallback / Fehler', fallbackItems.length),\n  summaryLine('Noch in Verarbeitung', processing.length),\n  { json: { 'Anhang-ID': '=== PRO ZIEL-POSTFACH ===' } },\n];\n\nconst byForward = {};\ncompleted.forEach((i) => {\n  const key = i.json.forward_to || '(leer)';\n  byForward[key] = (byForward[key] || 0) + 1;\n});\nObject.entries(byForward)\n  .sort((a, b) => b[1] - a[1])\n  .forEach(([key, count]) => summary.push(summaryLine(key, count)));\n\nsummary.push({ json: { 'Anhang-ID': '=== FALLBACK-GRÜNDE ===' } });\nconst byReason = {};\ncompleted\n  .filter((i) => i.json.fallback_reason)\n  .forEach((i) => {\n    const key = i.json.fallback_reason;\n    byReason[key] = (byReason[key] || 0) + 1;\n  });\nif (Object.keys(byReason).length === 0) {\n  summary.push(summaryLine('(keine)', 0));\n} else {\n  Object.entries(byReason)\n    .sort((a, b) => b[1] - a[1])\n    .forEach(([key, count]) =>\n      summary.push(summaryLine(REASON_LABELS[key] || key, count))\n    );\n}\n\nreturn [...detailRows, { json: {} }, ...summary];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -16,
+        528
+      ],
+      "id": "f1a2b3c4-d5e6-7890-abcd-report00002",
+      "name": "Prepare weekly report1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Convert to File": {
+      "main": [
+        [
+          {
+            "node": "Send to Lennart Zimmermann",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send to Justin Jalayer",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send to Cosima Kröger",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get last week": {
+      "main": [
+        [
+          {
+            "node": "Prepare weekly report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Weekly": {
+      "main": [
+        [
+          {
+            "node": "Get last week",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to File1": {
+      "main": [
+        [
+          {
+            "node": "Send to Lennart Zimmermann1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get last week1": {
+      "main": [
+        [
+          {
+            "node": "Prepare weekly report1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Get last week1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare weekly report": {
+      "main": [
+        [
+          {
+            "node": "Convert to File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare weekly report1": {
+      "main": [
+        [
+          {
+            "node": "Convert to File1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "ee5ce720-be2c-446a-83af-1865b64c9371",
+  "meta": {
+    "instanceId": "0de3b10c758adc5c31c601b0a5fe04d246df1ba782299ad8498e762c89eec586"
+  },
+  "id": "qK665IDKVViCatKB",
+  "tags": []
+}
