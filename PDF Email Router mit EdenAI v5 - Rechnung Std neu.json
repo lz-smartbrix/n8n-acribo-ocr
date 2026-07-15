@@ -69,7 +69,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const outputItems = [];\nconst inputItem = $input.first();\nconst binaryData = inputItem.binary || {};\nconst mailId = inputItem.json.id || 'unknown';\nlet index = 0;\n\nfor (const [binaryKey, binaryValue] of Object.entries(binaryData)) {\n  if (!binaryKey.startsWith('attachment_')) continue;\n\n  const fileName = (binaryValue.fileName || '').toLowerCase();\n  const mimeType = (binaryValue.mimeType || '').toLowerCase();\n  const fileExtension = (binaryValue.fileExtension || '').toLowerCase();\n\n  const istPDF =\n    mimeType === 'application/pdf' ||\n    fileName.endsWith('.pdf') ||\n    fileExtension === 'pdf';\n\n  const istSignierteDatei =\n    mimeType === 'multipart/signed' ||\n    mimeType === 'application/pkcs7-mime' ||\n    mimeType === 'application/x-pkcs7-mime' ||\n    mimeType === 'application/pkcs7-signature' ||\n    mimeType === 'application/x-pkcs7-signature' ||\n    fileName.endsWith('.p7m') ||\n    fileExtension === 'p7m';\n\n  if (!istPDF && !istSignierteDatei) continue;\n\n  const attachment_id = `${mailId}_${index}`;\n  const mergeKey = attachment_id;\n\n  const outputFileName = istPDF\n    ? binaryValue.fileName\n    : (binaryValue.fileName || `attachment_${index}.p7m`).replace(/\\.p7m$/i, '.pdf');\n\n  outputItems.push({\n    json: {\n      ...inputItem.json,\n      mail_id: mailId,\n      attachment_id,\n      attachment_index: index,\n      fileName: binaryValue.fileName,\n      originalFileName: binaryValue.fileName,\n      outputFileName,\n      mimeType,\n      originalMimeType: mimeType,\n      fileExtension,\n      istPDF,\n      istSignierteDatei,\n      brauchtEntpackung: istSignierteDatei && !istPDF,\n      inputPath: `/home/node/.n8n-files/${mergeKey}.p7m`,\n      outputPath: `/home/node/.n8n-files/${mergeKey}.pdf`,\n      mergeKey,\n      originalBinaryKey: binaryKey,\n    },\n    binary: {\n      data: binaryValue,\n    },\n  });\n\n  index++;\n}\n\nreturn outputItems;"
+        "jsCode": "const outputItems = [];\nconst inputItem = $input.first();\nconst binaryData = inputItem.binary || {};\nconst mailId = inputItem.json.id || 'unknown';\nlet index = 0;\n\nfor (const [binaryKey, binaryValue] of Object.entries(binaryData)) {\n  if (!binaryKey.startsWith('attachment_')) continue;\n\n  const fileName = (binaryValue.fileName || '').toLowerCase();\n  const mimeType = (binaryValue.mimeType || '').toLowerCase();\n  const fileExtension = (binaryValue.fileExtension || '').toLowerCase();\n\n  const istPDF =\n    mimeType === 'application/pdf' ||\n    fileName.endsWith('.pdf') ||\n    fileExtension === 'pdf';\n\n  const istSignierteDatei =\n    mimeType === 'multipart/signed' ||\n    mimeType === 'application/pkcs7-mime' ||\n    mimeType === 'application/x-pkcs7-mime' ||\n    mimeType === 'application/pkcs7-signature' ||\n    mimeType === 'application/x-pkcs7-signature' ||\n    fileName.endsWith('.p7m') ||\n    fileExtension === 'p7m';\n\n  if (!istPDF && !istSignierteDatei) continue;\n\n  const attachment_id = `${mailId}_${index}`;\n  const mergeKey = attachment_id;\n\n  const outputFileName = istPDF\n    ? binaryValue.fileName\n    : (binaryValue.fileName || `attachment_${index}.p7m`).replace(/\\.p7m$/i, '.pdf');\n\n  outputItems.push({\n    json: {\n      ...inputItem.json,\n      mail_id: mailId,\n      attachment_id,\n      attachment_index: index,\n      fileName: binaryValue.fileName,\n      originalFileName: binaryValue.fileName,\n      outputFileName,\n      mimeType,\n      originalMimeType: mimeType,\n      fileExtension,\n      istPDF,\n      istSignierteDatei,\n      brauchtEntpackung: istSignierteDatei && !istPDF,\n      inputPath: `/home/node/.n8n-files/${mergeKey}.p7m`,\n      outputPath: `/home/node/.n8n-files/${mergeKey}.pdf`,\n      mergeKey,\n      originalBinaryKey: binaryKey,\n    },\n    binary: { data: binaryValue },\n  });\n\n  index++;\n}\n\nif (outputItems.length === 0) {\n  return [{\n    json: {\n      ...inputItem.json,\n      mail_id: mailId,\n      attachment_id: `${mailId}_none`,\n      noValidAttachments: true,\n      routeTarget: 'fallback',\n      fallbackReason: 'no_valid_attachment',\n      ocr_status: 'failed',\n      ocr_error: 'Keine PDF- oder P7M-Anhänge in der Mail gefunden.',\n    },\n  }];\n}\n\nreturn outputItems;"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -79,14 +79,14 @@
       ],
       "id": "e3091d20-c468-41d3-a545-5ef2227c75b4",
       "name": "Convert attachments to seperate items",
-      "alwaysOutputData": false
+      "alwaysOutputData": true
     },
     {
       "parameters": {
         "operation": "update",
         "messageId": {
           "__rl": true,
-          "value": "={{ $json.id }}",
+          "value": "={{ $('Get a message').item.json.id }}",
           "mode": "id"
         },
         "updateFields": {
@@ -107,35 +107,8 @@
           "id": "oZBbSjk72n7Wgl8A",
           "name": "rechnung@acribo.com"
         }
-      }
-    },
-    {
-      "parameters": {
-        "jsCode": "const parsedItems = $input.all();\nconst originalItems = $('Convert attachments to seperate items').all();\n\nreturn parsedItems.map((item, index) => {\n  const original = originalItems[index];\n\n  item.json.mergeKey = original.json.mergeKey;\n  item.json.fileName = original.json.fileName;\n  item.json.originalFileName = original.json.originalFileName;\n\n  return item;\n});"
       },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -1088,
-        1440
-      ],
-      "id": "ef2d56ba-3245-4109-9f9f-6aded9bee931",
-      "name": "Set mergekey for binary file"
-    },
-    {
-      "parameters": {
-        "mode": "combine",
-        "fieldsToMatchString": "mergeKey",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.merge",
-      "typeVersion": 3.2,
-      "position": [
-        -896,
-        896
-      ],
-      "id": "ccc66042-416b-437e-9426-80adc33f988d",
-      "name": "Merge binary file with parsed information"
+      "executeOnce": true
     },
     {
       "parameters": {
@@ -345,40 +318,6 @@
       ],
       "id": "3db59bb5-399c-4c6c-8688-f46c3e00cca0",
       "name": "Switch - Mail according to customer"
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict",
-            "version": 3
-          },
-          "conditions": [
-            {
-              "id": "0e1fe94e-9b46-4012-b312-c3ee29726111",
-              "leftValue": "={{ $json['openai/gpt-4o'].error }}",
-              "rightValue": "",
-              "operator": {
-                "type": "object",
-                "operation": "exists",
-                "singleValue": true
-              }
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.3,
-      "position": [
-        -1360,
-        1440
-      ],
-      "id": "7dfea488-57bd-4b6d-9fcf-8ee0aacee9ff",
-      "name": "If"
     },
     {
       "parameters": {
@@ -687,7 +626,8 @@
         "rule": {
           "interval": [
             {
-              "field": "minutes"
+              "field": "minutes",
+              "minutesInterval": 5
             }
           ]
         }
@@ -774,17 +714,7 @@
             {
               "id": "8e2341c5-b856-4d0a-b841-e87b655795a2",
               "leftValue": "={{ $json.brauchtEntpackung }}",
-              "rightValue": "=true",
-              "operator": {
-                "type": "boolean",
-                "operation": "true",
-                "singleValue": true
-              }
-            },
-            {
-              "id": "17321d90-ccce-41ef-9733-459c4bc50fe3",
-              "leftValue": "={{ $('Get a message').item.json.hasAttachments }}",
-              "rightValue": false,
+              "rightValue": true,
               "operator": {
                 "type": "boolean",
                 "operation": "true",
@@ -837,7 +767,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const fs = require('fs');\n\nconst item = $input.first();\nconst inputPath = item.json.inputPath;\nconst outputPath = item.json.outputPath;\n\ntry {\n  const raw = fs.readFileSync(inputPath, 'utf8');\n\n  const match = raw.match(\n    /Content-Type:\\s*application\\/octet-stream;\\s*name=\"[^\"]+\\.pdf\"[\\s\\S]*?Content-Transfer-Encoding:\\s*base64[\\s\\S]*?\\r?\\n\\r?\\n([\\s\\S]*?)(?=\\r?\\n--)/i\n  );\n\n  if (!match) {\n    return [{\n      json: {\n        ...item.json,\n        decryptFailed: true,\n        routeTarget: 'fallback',\n        fallbackReason: 'p7m_extract_failed',\n        decrypt_error: 'Keine PDF als application/octet-stream base64 gefunden.',\n      },\n      binary: item.binary,\n    }];\n  }\n\n  const base64Body = match[1].replace(/\\r?\\n/g, '').replace(/\\s/g, '');\n  const buffer = Buffer.from(base64Body, 'base64');\n\n  if (buffer.slice(0, 5).toString() !== '%PDF-') {\n    return [{\n      json: {\n        ...item.json,\n        decryptFailed: true,\n        routeTarget: 'fallback',\n        fallbackReason: 'p7m_extract_failed',\n        decrypt_error: 'Extrahierte Datei ist keine gültige PDF.',\n      },\n      binary: item.binary,\n    }];\n  }\n\n  fs.writeFileSync(outputPath, buffer);\n\n  return [{\n    json: {\n      ...item.json,\n      decryptFailed: false,\n      p7mEntpackt: true,\n      detectedContent: 'pdf-octet-stream-base64',\n      outputPath,\n      extractedPdfSize: buffer.length,\n    },\n    binary: item.binary,\n  }];\n} catch (e) {\n  return [{\n    json: {\n      ...item.json,\n      decryptFailed: true,\n      routeTarget: 'fallback',\n      fallbackReason: 'p7m_extract_failed',\n      decrypt_error: e.message,\n    },\n    binary: item.binary,\n  }];\n}"
+        "jsCode": "const fs = require('fs');\n\nconst item = $input.first();\nconst inputPath = item.json.inputPath;\nconst outputPath = item.json.outputPath;\n\nconst PDF_PATTERNS = [\n  /Content-Type:\\s*application\\/octet-stream;\\s*name=\"[^\"]+\\.pdf\"[\\s\\S]*?Content-Transfer-Encoding:\\s*base64[\\s\\S]*?\\r?\\n\\r?\\n([\\s\\S]*?)(?=\\r?\\n--)/i,\n  /Content-Type:\\s*application\\/pdf(?:;\\s*name=\"[^\"]+\")?[\\s\\S]*?Content-Transfer-Encoding:\\s*base64[\\s\\S]*?\\r?\\n\\r?\\n([\\s\\S]*?)(?=\\r?\\n--)/i,\n  /Content-Type:\\s*application\\/x-pdf[\\s\\S]*?Content-Transfer-Encoding:\\s*base64[\\s\\S]*?\\r?\\n\\r?\\n([\\s\\S]*?)(?=\\r?\\n--)/i,\n  /name=\"[^\"]+\\.pdf\"[\\s\\S]*?Content-Transfer-Encoding:\\s*base64[\\s\\S]*?\\r?\\n\\r?\\n([\\s\\S]*?)(?=\\r?\\n--)/i,\n  /filename=\"[^\"]+\\.pdf\"[\\s\\S]*?Content-Transfer-Encoding:\\s*base64[\\s\\S]*?\\r?\\n\\r?\\n([\\s\\S]*?)(?=\\r?\\n--)/i,\n];\n\nfunction extractPdfBuffer(raw) {\n  for (const pattern of PDF_PATTERNS) {\n    const match = raw.match(pattern);\n    if (!match) continue;\n    const base64Body = match[1].replace(/\\r?\\n/g, '').replace(/\\s/g, '');\n    const buffer = Buffer.from(base64Body, 'base64');\n    if (buffer.length > 5 && buffer.slice(0, 5).toString() === '%PDF-') {\n      return { buffer, pattern: pattern.source.slice(0, 40) };\n    }\n  }\n  return null;\n}\n\nfunction fail(reason) {\n  return [{\n    json: {\n      ...item.json,\n      decryptFailed: true,\n      routeTarget: 'fallback',\n      fallbackReason: 'p7m_extract_failed',\n      decrypt_error: reason,\n    },\n    binary: item.binary,\n  }];\n}\n\ntry {\n  const raw = fs.readFileSync(inputPath, 'utf8');\n  const extracted = extractPdfBuffer(raw);\n\n  if (!extracted) {\n    return fail('Keine PDF per Base64 in P7M/S-MIME gefunden (unterstützte Formate: octet-stream, application/pdf, x-pdf).');\n  }\n\n  fs.writeFileSync(outputPath, extracted.buffer);\n\n  return [{\n    json: {\n      ...item.json,\n      decryptFailed: false,\n      p7mEntpackt: true,\n      detectedContent: extracted.pattern,\n      outputPath,\n      extractedPdfSize: extracted.buffer.length,\n    },\n    binary: item.binary,\n  }];\n} catch (e) {\n  return fail(e.message);\n}"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -2451,6 +2381,62 @@
       ],
       "id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
       "name": "If decrypt failed"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "no-valid-attachment-check",
+              "leftValue": "={{ $json.noValidAttachments }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -2400,
+        880
+      ],
+      "id": "c3d4e5f6-a7b8-9012-cdef-345678901234",
+      "name": "If no valid attachment"
+    },
+    {
+      "parameters": {
+        "toRecipients": "fi@acribo.com",
+        "subject": "SMARTBRIX - Mail ohne PDF/P7M-Anhang",
+        "bodyContent": "Sehr geehrte Damen und Herren,\n\neine Mail im Postfach rechnung@acribo.com enthielt keine verarbeitbaren PDF- oder P7M-Anhänge.\n\nBetreff: {{ $('Get a message').item.json.subject }}\nAbsender: {{ $('Get a message').item.json.from }}\n\nBitte manuell prüfen und zuordnen.",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        -480,
+        1952
+      ],
+      "id": "d4e5f6a7-b8c9-0123-def0-456789012345",
+      "name": "Fallback - no PDF attachment",
+      "credentials": {
+        "microsoftOutlookOAuth2Api": {
+          "id": "Pydw2OiP5zm2Xqv9",
+          "name": "acribo-ocr@smartbrix.io"
+        }
+      }
     }
   ],
   "pinData": {},
@@ -2477,12 +2463,7 @@
       "main": [
         [
           {
-            "node": "Insert Run",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "If1",
+            "node": "If no valid attachment",
             "type": "main",
             "index": 0
           }
@@ -2593,11 +2574,6 @@
     "Get a message": {
       "main": [
         [
-          {
-            "node": "Mark message as read",
-            "type": "main",
-            "index": 0
-          },
           {
             "node": "Convert attachments to seperate items",
             "type": "main",
@@ -2791,17 +2767,35 @@
     },
     "Logging - acribo-gmbh-eingangsrechnungen@acribo.com": {
       "main": [
-        []
+        [
+          {
+            "node": "Mark message as read",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Logging - acribo-kroepcke-eingangsrechnungen@acribo.com": {
       "main": [
-        []
+        [
+          {
+            "node": "Mark message as read",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Logging - Fallback": {
       "main": [
-        []
+        [
+          {
+            "node": "Mark message as read",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Insert Run": {
@@ -2843,6 +2837,117 @@
         [
           {
             "node": "Switch - Mail according to customer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If no valid attachment": {
+      "main": [
+        [
+          {
+            "node": "Fallback - no PDF attachment",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Insert Run",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fallback - no PDF attachment": {
+      "main": [
+        [
+          {
+            "node": "Logging - Fallback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Logging - acribo-grundbesitz-eingangsrechnungen@acribo.com": {
+      "main": [
+        [
+          {
+            "node": "Mark message as read",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Logging - acribo-energie-eingangsrechnungen@acribo.com": {
+      "main": [
+        [
+          {
+            "node": "Mark message as read",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Logging - acribo-service-eingangsrechnungen@acribo.com": {
+      "main": [
+        [
+          {
+            "node": "Mark message as read",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Logging - acribo-invest-eingangsrechnungen@acribo.com": {
+      "main": [
+        [
+          {
+            "node": "Mark message as read",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Logging - acribo-invest2-eingangsrechnungen@acribo.com": {
+      "main": [
+        [
+          {
+            "node": "Mark message as read",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Logging - acribo-invest4-eingangsrechnungen@acribo.com": {
+      "main": [
+        [
+          {
+            "node": "Mark message as read",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Logging - acribo-bunke-eingangsrechnungen@acribo.com": {
+      "main": [
+        [
+          {
+            "node": "Mark message as read",
             "type": "main",
             "index": 0
           }
