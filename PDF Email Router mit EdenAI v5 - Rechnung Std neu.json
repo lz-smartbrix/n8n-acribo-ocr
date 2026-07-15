@@ -1,0 +1,2872 @@
+{
+  "name": "PDF Email Router mit EdenAI v5 - Rechnung Std neu",
+  "nodes": [
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.edenai.run/v2/ocr/financial_parser",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "providers",
+              "value": "openai/gpt-4o"
+            },
+            {
+              "name": "document_type",
+              "value": "invoice"
+            },
+            {
+              "name": "language",
+              "value": "de"
+            },
+            {
+              "name": "response_as_dict",
+              "value": "true"
+            },
+            {
+              "name": "attributes_as_list",
+              "value": "true"
+            },
+            {
+              "parameterType": "formBinaryData",
+              "name": "file",
+              "inputDataFieldName": "data"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "addeecec-5d67-48de-bb0b-b02082f5cb8a",
+      "name": "EdenAI Invoice Parser",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1616,
+        1440
+      ],
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "lzpaOUiGA42IU5Jv",
+          "name": "EdenAI"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const outputItems = [];\nconst inputItem = $input.first();\nconst binaryData = inputItem.binary || {};\nconst mailId = inputItem.json.id || 'unknown';\nlet index = 0;\n\nfor (const [binaryKey, binaryValue] of Object.entries(binaryData)) {\n  if (!binaryKey.startsWith('attachment_')) continue;\n\n  const fileName = (binaryValue.fileName || '').toLowerCase();\n  const mimeType = (binaryValue.mimeType || '').toLowerCase();\n  const fileExtension = (binaryValue.fileExtension || '').toLowerCase();\n\n  const istPDF =\n    mimeType === 'application/pdf' ||\n    fileName.endsWith('.pdf') ||\n    fileExtension === 'pdf';\n\n  const istSignierteDatei =\n    mimeType === 'multipart/signed' ||\n    mimeType === 'application/pkcs7-mime' ||\n    mimeType === 'application/x-pkcs7-mime' ||\n    mimeType === 'application/pkcs7-signature' ||\n    mimeType === 'application/x-pkcs7-signature' ||\n    fileName.endsWith('.p7m') ||\n    fileExtension === 'p7m';\n\n  if (!istPDF && !istSignierteDatei) continue;\n\n  const attachment_id = `${mailId}_${index}`;\n  const mergeKey = attachment_id;\n\n  const outputFileName = istPDF\n    ? binaryValue.fileName\n    : (binaryValue.fileName || `attachment_${index}.p7m`).replace(/\\.p7m$/i, '.pdf');\n\n  outputItems.push({\n    json: {\n      ...inputItem.json,\n      mail_id: mailId,\n      attachment_id,\n      attachment_index: index,\n      fileName: binaryValue.fileName,\n      originalFileName: binaryValue.fileName,\n      outputFileName,\n      mimeType,\n      originalMimeType: mimeType,\n      fileExtension,\n      istPDF,\n      istSignierteDatei,\n      brauchtEntpackung: istSignierteDatei && !istPDF,\n      inputPath: `/home/node/.n8n-files/${mergeKey}.p7m`,\n      outputPath: `/home/node/.n8n-files/${mergeKey}.pdf`,\n      mergeKey,\n      originalBinaryKey: binaryKey,\n    },\n    binary: {\n      data: binaryValue,\n    },\n  });\n\n  index++;\n}\n\nreturn outputItems;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2624,
+        880
+      ],
+      "id": "e3091d20-c468-41d3-a545-5ef2227c75b4",
+      "name": "Convert attachments to seperate items",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "messageId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "updateFields": {
+          "isRead": true
+        }
+      },
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        -2624,
+        592
+      ],
+      "id": "dd0fb6bc-72f6-449e-9e81-8869f35d308f",
+      "name": "Mark message as read",
+      "webhookId": "6bc428d5-7e3b-45ce-888e-9339947fd76f",
+      "credentials": {
+        "microsoftOutlookOAuth2Api": {
+          "id": "oZBbSjk72n7Wgl8A",
+          "name": "rechnung@acribo.com"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const parsedItems = $input.all();\nconst originalItems = $('Convert attachments to seperate items').all();\n\nreturn parsedItems.map((item, index) => {\n  const original = originalItems[index];\n\n  item.json.mergeKey = original.json.mergeKey;\n  item.json.fileName = original.json.fileName;\n  item.json.originalFileName = original.json.originalFileName;\n\n  return item;\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1088,
+        1440
+      ],
+      "id": "ef2d56ba-3245-4109-9f9f-6aded9bee931",
+      "name": "Set mergekey for binary file"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "fieldsToMatchString": "mergeKey",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -896,
+        896
+      ],
+      "id": "ccc66042-416b-437e-9426-80adc33f988d",
+      "name": "Merge binary file with parsed information"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.routeTarget }}",
+                    "rightValue": "gmbh",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.routeTarget }}",
+                    "rightValue": "grundbesitz",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.routeTarget }}",
+                    "rightValue": "energie",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.routeTarget }}",
+                    "rightValue": "service",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.routeTarget }}",
+                    "rightValue": "invest",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.routeTarget }}",
+                    "rightValue": "invest2",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.routeTarget }}",
+                    "rightValue": "invest4",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.routeTarget }}",
+                    "rightValue": "kroepcke",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.routeTarget }}",
+                    "rightValue": "bunke",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra",
+          "ignoreCase": false
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -480,
+        768
+      ],
+      "id": "3db59bb5-399c-4c6c-8688-f46c3e00cca0",
+      "name": "Switch - Mail according to customer"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "0e1fe94e-9b46-4012-b312-c3ee29726111",
+              "leftValue": "={{ $json['openai/gpt-4o'].error }}",
+              "rightValue": "",
+              "operator": {
+                "type": "object",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -1360,
+        1440
+      ],
+      "id": "7dfea488-57bd-4b6d-9fcf-8ee0aacee9ff",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "toRecipients": "acribo-gmbh-eingangsrechnungen@acribo.com",
+        "subject": "Weiterleitung erfolgreich: ACRIBO GmbH",
+        "additionalFields": {
+          "attachments": {
+            "attachments": [
+              {
+                "binaryPropertyName": "data"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        -64,
+        32
+      ],
+      "id": "9d5dab0a-5199-48e8-b996-11bb95291a0f",
+      "name": "Mail to Acribo GMBH",
+      "webhookId": "e414902e-6971-4453-aa8e-d8fb00b772fb",
+      "alwaysOutputData": false,
+      "credentials": {
+        "microsoftOutlookOAuth2Api": {
+          "id": "Pydw2OiP5zm2Xqv9",
+          "name": "acribo-ocr@smartbrix.io"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toRecipients": "acribo-grundbesitz-eingangsrechnungen@acribo.com",
+        "subject": "Weiterleitung erfolgreich: ACRIBO Grundbesitz",
+        "additionalFields": {
+          "attachments": {
+            "attachments": [
+              {
+                "binaryPropertyName": "data"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        -64,
+        224
+      ],
+      "id": "78678b6e-02c6-497f-8bb6-2974a9a73c49",
+      "name": "Mail to ACRIBO Grundbesitz",
+      "webhookId": "81c96f03-bce8-461b-be40-90c7653329e5",
+      "credentials": {
+        "microsoftOutlookOAuth2Api": {
+          "id": "Pydw2OiP5zm2Xqv9",
+          "name": "acribo-ocr@smartbrix.io"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toRecipients": "acribo-energie-eingangsrechnungen@acribo.com",
+        "subject": "Weiterleitung erfolgreich: ACRIBO Energie",
+        "additionalFields": {
+          "attachments": {
+            "attachments": [
+              {
+                "binaryPropertyName": "data"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        -64,
+        416
+      ],
+      "id": "0a1a8b88-88a9-456e-903f-59bb6800d457",
+      "name": "Mail to ACRIBO Energie",
+      "webhookId": "8807e93d-bd9a-49aa-ae91-893e64f6cde7",
+      "credentials": {
+        "microsoftOutlookOAuth2Api": {
+          "id": "Pydw2OiP5zm2Xqv9",
+          "name": "acribo-ocr@smartbrix.io"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toRecipients": "acribo-service-eingangsrechnungen@acribo.com",
+        "subject": "Weiterleitung erfolgreich: ACRIBO Service",
+        "additionalFields": {
+          "attachments": {
+            "attachments": [
+              {
+                "binaryPropertyName": "data"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        -64,
+        608
+      ],
+      "id": "c08a8224-bbb0-4ad5-b169-f8ae10db9232",
+      "name": "Mail to ACRIBO Service",
+      "webhookId": "9cf1e106-a9ab-48e2-a2c6-9485a462ee55",
+      "credentials": {
+        "microsoftOutlookOAuth2Api": {
+          "id": "Pydw2OiP5zm2Xqv9",
+          "name": "acribo-ocr@smartbrix.io"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toRecipients": "acribo-invest-eingangsrechnungen@acribo.com",
+        "subject": "Weiterleitung erfolgreich: ACRIBO invest",
+        "additionalFields": {
+          "attachments": {
+            "attachments": [
+              {
+                "binaryPropertyName": "data"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        -64,
+        800
+      ],
+      "id": "b6fd3aca-732e-435c-98ff-6ca8742f37c2",
+      "name": "Mail to ACRIBO invest",
+      "webhookId": "c8ea14b5-9ef4-4d74-aef4-7549c3e20463",
+      "credentials": {
+        "microsoftOutlookOAuth2Api": {
+          "id": "Pydw2OiP5zm2Xqv9",
+          "name": "acribo-ocr@smartbrix.io"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toRecipients": "acribo-invest2-eingangsrechnungen@acribo.com",
+        "subject": "Weiterleitung erfolgreich: ACRIBO invest II",
+        "additionalFields": {
+          "attachments": {
+            "attachments": [
+              {
+                "binaryPropertyName": "data"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        -64,
+        992
+      ],
+      "id": "28e920db-533d-4d69-af60-62dcce5d7a11",
+      "name": "Mail to ACRIBO invest 2",
+      "webhookId": "30b7a401-e257-4768-a876-3bdec06be73a",
+      "credentials": {
+        "microsoftOutlookOAuth2Api": {
+          "id": "Pydw2OiP5zm2Xqv9",
+          "name": "acribo-ocr@smartbrix.io"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toRecipients": "acribo-invest4-eingangsrechnungen@acribo.com",
+        "subject": "Weiterleitung erfolgreich: ACRIBO invest IV",
+        "additionalFields": {
+          "attachments": {
+            "attachments": [
+              {
+                "binaryPropertyName": "data"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        -64,
+        1184
+      ],
+      "id": "a79b16ae-a5d8-4af7-bdcd-e0a90ca5b894",
+      "name": "Mail to ACRIBO invest 4",
+      "webhookId": "47d7d9e5-68be-4b57-9d1c-454889fd0eb2",
+      "credentials": {
+        "microsoftOutlookOAuth2Api": {
+          "id": "Pydw2OiP5zm2Xqv9",
+          "name": "acribo-ocr@smartbrix.io"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toRecipients": "acribo-kroepcke-eingangsrechnungen@acribo.com",
+        "subject": "Weiterleitung erfolgreich: Café am Kröpcke",
+        "additionalFields": {
+          "attachments": {
+            "attachments": [
+              {
+                "binaryPropertyName": "data"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        -64,
+        1376
+      ],
+      "id": "54e50afa-be89-408c-968c-e81f44d968a1",
+      "name": "Mail to Kröpcke",
+      "webhookId": "3082bd52-5403-491c-b706-80728ff81b8f",
+      "credentials": {
+        "microsoftOutlookOAuth2Api": {
+          "id": "Pydw2OiP5zm2Xqv9",
+          "name": "acribo-ocr@smartbrix.io"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toRecipients": "acribo-bunke-eingangsrechnungen@acribo.com",
+        "subject": "Weiterleitung erfolgreich: Ingunde Bunke",
+        "additionalFields": {
+          "attachments": {
+            "attachments": [
+              {
+                "binaryPropertyName": "data"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        -64,
+        1568
+      ],
+      "id": "7f575d9c-406a-41cb-b858-9f1d4878756e",
+      "name": "Mail to Bunke",
+      "webhookId": "bd728063-1e56-4d33-a171-bd20e912f328",
+      "credentials": {
+        "microsoftOutlookOAuth2Api": {
+          "id": "Pydw2OiP5zm2Xqv9",
+          "name": "acribo-ocr@smartbrix.io"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "toRecipients": "fi@acribo.com",
+        "subject": "SMARTBRIX - Rechnung manuell zuordnen ({{ $json.fallbackReason || 'unbekannt' }})",
+        "bodyContent": "Sehr geehrte Damen und Herren,\n\nbitte ordnen Sie folgende Rechnung dem passenden Unternehmen in SMARTBRIX zu.\n\nGrund: {{ $json.fallbackReason || 'unbekannt' }}\nDatei: {{ $json.fileName || $json.originalFileName }}\nOCR-Status: {{ $json.ocr_status || 'n/a' }}\n{{ $json.ocr_error ? 'Fehler: ' + $json.ocr_error : '' }}\n{{ $json.detected_customer ? 'Erkannter Kunde: ' + $json.detected_customer : '' }}\n{{ $json.detected_merchant ? 'Erkannter Lieferant: ' + $json.detected_merchant : '' }}",
+        "additionalFields": {
+          "attachments": {
+            "attachments": [
+              {
+                "binaryPropertyName": "data"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        -64,
+        1760
+      ],
+      "id": "a0d9b541-3d61-4d84-a9a8-d00c626b3daa",
+      "name": "Fallback Message",
+      "webhookId": "151b5bb5-eda2-4295-bd67-cd7d594f2fb3",
+      "credentials": {
+        "microsoftOutlookOAuth2Api": {
+          "id": "Pydw2OiP5zm2Xqv9",
+          "name": "acribo-ocr@smartbrix.io"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -4000,
+        880
+      ],
+      "id": "f391d2ca-28e8-4ed6-abd8-0b5ff6d84b45",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "messageId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {
+          "attachmentsPrefix": "attachment_",
+          "downloadAttachments": true
+        }
+      },
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        -3248,
+        880
+      ],
+      "id": "7ab3110c-0522-4e35-8b95-e46f03d00d74",
+      "name": "Get a message",
+      "webhookId": "62b642d2-3134-48ff-8bf8-3fa27311b149",
+      "executeOnce": true,
+      "credentials": {
+        "microsoftOutlookOAuth2Api": {
+          "id": "oZBbSjk72n7Wgl8A",
+          "name": "rechnung@acribo.com"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "limit": 1,
+        "filtersUI": {
+          "values": {
+            "filters": {
+              "hasAttachments": false,
+              "readStatus": "unread"
+            }
+          }
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        -3632,
+        880
+      ],
+      "id": "46773155-5126-4db2-b89e-b06f23e7fdf6",
+      "name": "Get many messages",
+      "webhookId": "71ea505a-959c-44ab-a025-647571948ee7",
+      "credentials": {
+        "microsoftOutlookOAuth2Api": {
+          "id": "oZBbSjk72n7Wgl8A",
+          "name": "rechnung@acribo.com"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "8e2341c5-b856-4d0a-b841-e87b655795a2",
+              "leftValue": "={{ $json.brauchtEntpackung }}",
+              "rightValue": "=true",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "17321d90-ccce-41ef-9733-459c4bc50fe3",
+              "leftValue": "={{ $('Get a message').item.json.hasAttachments }}",
+              "rightValue": false,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -3040,
+        1424
+      ],
+      "id": "ef2ce2c9-0ce8-4870-9449-595ca9d1134b",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first();\n\nreturn [{\n  json: {\n    ...item.json,\n    hasBinary: !!item.binary,\n    binaryKeys: Object.keys(item.binary || {}),\n    inputPath: item.json.inputPath,\n    brauchtEntpackung: item.json.brauchtEntpackung,\n  },\n  binary: item.binary,\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2784,
+        1184
+      ],
+      "id": "977ec847-f9cf-4762-8430-bf236a806613",
+      "name": "Check if encrypted",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "={{ $json.inputPath }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1.1,
+      "position": [
+        -2528,
+        1184
+      ],
+      "id": "642c3e39-5ec3-401e-bfe3-6055f736767b",
+      "name": "Write to disk",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const fs = require('fs');\n\nconst item = $input.first();\nconst inputPath = item.json.inputPath;\nconst outputPath = item.json.outputPath;\n\ntry {\n  const raw = fs.readFileSync(inputPath, 'utf8');\n\n  const match = raw.match(\n    /Content-Type:\\s*application\\/octet-stream;\\s*name=\"[^\"]+\\.pdf\"[\\s\\S]*?Content-Transfer-Encoding:\\s*base64[\\s\\S]*?\\r?\\n\\r?\\n([\\s\\S]*?)(?=\\r?\\n--)/i\n  );\n\n  if (!match) {\n    return [{\n      json: {\n        ...item.json,\n        decryptFailed: true,\n        routeTarget: 'fallback',\n        fallbackReason: 'p7m_extract_failed',\n        decrypt_error: 'Keine PDF als application/octet-stream base64 gefunden.',\n      },\n      binary: item.binary,\n    }];\n  }\n\n  const base64Body = match[1].replace(/\\r?\\n/g, '').replace(/\\s/g, '');\n  const buffer = Buffer.from(base64Body, 'base64');\n\n  if (buffer.slice(0, 5).toString() !== '%PDF-') {\n    return [{\n      json: {\n        ...item.json,\n        decryptFailed: true,\n        routeTarget: 'fallback',\n        fallbackReason: 'p7m_extract_failed',\n        decrypt_error: 'Extrahierte Datei ist keine gültige PDF.',\n      },\n      binary: item.binary,\n    }];\n  }\n\n  fs.writeFileSync(outputPath, buffer);\n\n  return [{\n    json: {\n      ...item.json,\n      decryptFailed: false,\n      p7mEntpackt: true,\n      detectedContent: 'pdf-octet-stream-base64',\n      outputPath,\n      extractedPdfSize: buffer.length,\n    },\n    binary: item.binary,\n  }];\n} catch (e) {\n  return [{\n    json: {\n      ...item.json,\n      decryptFailed: true,\n      routeTarget: 'fallback',\n      fallbackReason: 'p7m_extract_failed',\n      decrypt_error: e.message,\n    },\n    binary: item.binary,\n  }];\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2272,
+        1184
+      ],
+      "id": "56ef6876-4ee4-44bb-892c-55059d85d07f",
+      "name": "Decrypt",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "fileSelector": "={{ $json.outputPath }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1.1,
+      "position": [
+        -2048,
+        1184
+      ],
+      "id": "53bbdb66-0adb-4f78-b491-ae58cc3a9b2d",
+      "name": "Read decrypted pdf",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first();\n\nitem.binary.data.mimeType = 'application/pdf';\nitem.binary.data.fileExtension = 'pdf';\nitem.binary.data.fileName =\n  item.json.outputFileName || `${item.json.mergeKey}.pdf`;\n\nitem.json.fileName = item.binary.data.fileName;\nitem.json.mimeType = 'application/pdf';\nitem.json.fileExtension = 'pdf';\nitem.json.istPDF = true;\nitem.json.brauchtEntpackung = false;\n\nreturn [item];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1840,
+        1184
+      ],
+      "id": "311a2618-49a0-4c11-8d34-5034b6ba984e",
+      "name": "get meta data",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "dataTableId": {
+          "__rl": true,
+          "value": "3EZHkYswDkV3030Y",
+          "mode": "list",
+          "cachedResultName": "n8n_invoice_ocr_reporting",
+          "cachedResultUrl": "/projects/OrX0COEJWZYXeBir/datatables/3EZHkYswDkV3030Y"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "attachment_id",
+              "keyValue": "={{ $json.attachment_id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "attachment_id": "={{ $json.attachment_id }}",
+            "mail_id": "={{ $json.mail_id || $('Get a message').item.json.id }}",
+            "file_name": "={{ $json.fileName || $json.originalFileName }}",
+            "subject": "={{ $('Get a message').item.json.subject }}",
+            "from": "={{ $('Get a message').item.json.from }}",
+            "hasAttachments": "={{ $('Get a message').item.json.hasAttachments }}",
+            "ocr_status": "={{ $json.ocr_status || ($json.ocrFailed ? 'failed' : 'success') }}",
+            "fallback_reason": "={{ $json.fallbackReason || '' }}",
+            "forward_to": "acribo-gmbh-eingangsrechnungen@acribo.com"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "attachment_id",
+              "displayName": "attachment_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "mail_id",
+              "displayName": "mail_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "file_name",
+              "displayName": "file_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "from",
+              "displayName": "from",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "subject",
+              "displayName": "subject",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "hasAttachments",
+              "displayName": "hasAttachments",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "forward_to",
+              "displayName": "forward_to",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "ocr_status",
+              "displayName": "ocr_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "fallback_reason",
+              "displayName": "fallback_reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        336,
+        32
+      ],
+      "id": "cccf0f9b-0857-49a4-bf5d-21c7cf471ab5",
+      "name": "Logging - acribo-gmbh-eingangsrechnungen@acribo.com"
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "dataTableId": {
+          "__rl": true,
+          "value": "3EZHkYswDkV3030Y",
+          "mode": "list",
+          "cachedResultName": "n8n_invoice_ocr_reporting",
+          "cachedResultUrl": "/projects/OrX0COEJWZYXeBir/datatables/3EZHkYswDkV3030Y"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "attachment_id",
+              "keyValue": "={{ $json.attachment_id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "attachment_id": "={{ $json.attachment_id }}",
+            "mail_id": "={{ $json.mail_id || $('Get a message').item.json.id }}",
+            "file_name": "={{ $json.fileName || $json.originalFileName }}",
+            "subject": "={{ $('Get a message').item.json.subject }}",
+            "from": "={{ $('Get a message').item.json.from }}",
+            "hasAttachments": "={{ $('Get a message').item.json.hasAttachments }}",
+            "ocr_status": "={{ $json.ocr_status || ($json.ocrFailed ? 'failed' : 'success') }}",
+            "fallback_reason": "={{ $json.fallbackReason || '' }}",
+            "forward_to": "acribo-grundbesitz-eingangsrechnungen@acribo.com"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "attachment_id",
+              "displayName": "attachment_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "mail_id",
+              "displayName": "mail_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "file_name",
+              "displayName": "file_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "from",
+              "displayName": "from",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "subject",
+              "displayName": "subject",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "hasAttachments",
+              "displayName": "hasAttachments",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "forward_to",
+              "displayName": "forward_to",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "ocr_status",
+              "displayName": "ocr_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "fallback_reason",
+              "displayName": "fallback_reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        336,
+        224
+      ],
+      "id": "354e3400-6873-4ed2-bfff-c7c4c5ee8895",
+      "name": "Logging - acribo-grundbesitz-eingangsrechnungen@acribo.com"
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "dataTableId": {
+          "__rl": true,
+          "value": "3EZHkYswDkV3030Y",
+          "mode": "list",
+          "cachedResultName": "n8n_invoice_ocr_reporting",
+          "cachedResultUrl": "/projects/OrX0COEJWZYXeBir/datatables/3EZHkYswDkV3030Y"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "attachment_id",
+              "keyValue": "={{ $json.attachment_id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "attachment_id": "={{ $json.attachment_id }}",
+            "mail_id": "={{ $json.mail_id || $('Get a message').item.json.id }}",
+            "file_name": "={{ $json.fileName || $json.originalFileName }}",
+            "subject": "={{ $('Get a message').item.json.subject }}",
+            "from": "={{ $('Get a message').item.json.from }}",
+            "hasAttachments": "={{ $('Get a message').item.json.hasAttachments }}",
+            "ocr_status": "={{ $json.ocr_status || ($json.ocrFailed ? 'failed' : 'success') }}",
+            "fallback_reason": "={{ $json.fallbackReason || '' }}",
+            "forward_to": "acribo-energie-eingangsrechnungen@acribo.com"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "attachment_id",
+              "displayName": "attachment_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "mail_id",
+              "displayName": "mail_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "file_name",
+              "displayName": "file_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "from",
+              "displayName": "from",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "subject",
+              "displayName": "subject",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "hasAttachments",
+              "displayName": "hasAttachments",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "forward_to",
+              "displayName": "forward_to",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "ocr_status",
+              "displayName": "ocr_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "fallback_reason",
+              "displayName": "fallback_reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        336,
+        416
+      ],
+      "id": "6ea4eb71-9809-4ac9-b209-2fb00fe06c7f",
+      "name": "Logging - acribo-energie-eingangsrechnungen@acribo.com"
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "dataTableId": {
+          "__rl": true,
+          "value": "3EZHkYswDkV3030Y",
+          "mode": "list",
+          "cachedResultName": "n8n_invoice_ocr_reporting",
+          "cachedResultUrl": "/projects/OrX0COEJWZYXeBir/datatables/3EZHkYswDkV3030Y"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "attachment_id",
+              "keyValue": "={{ $json.attachment_id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "attachment_id": "={{ $json.attachment_id }}",
+            "mail_id": "={{ $json.mail_id || $('Get a message').item.json.id }}",
+            "file_name": "={{ $json.fileName || $json.originalFileName }}",
+            "subject": "={{ $('Get a message').item.json.subject }}",
+            "from": "={{ $('Get a message').item.json.from }}",
+            "hasAttachments": "={{ $('Get a message').item.json.hasAttachments }}",
+            "ocr_status": "={{ $json.ocr_status || ($json.ocrFailed ? 'failed' : 'success') }}",
+            "fallback_reason": "={{ $json.fallbackReason || '' }}",
+            "forward_to": "acribo-service-eingangsrechnungen@acribo.com"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "attachment_id",
+              "displayName": "attachment_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "mail_id",
+              "displayName": "mail_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "file_name",
+              "displayName": "file_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "from",
+              "displayName": "from",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "subject",
+              "displayName": "subject",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "hasAttachments",
+              "displayName": "hasAttachments",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "forward_to",
+              "displayName": "forward_to",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "ocr_status",
+              "displayName": "ocr_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "fallback_reason",
+              "displayName": "fallback_reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        336,
+        608
+      ],
+      "id": "4aeb8c9a-89d7-4ced-8c11-ba7d9d92f75d",
+      "name": "Logging - acribo-service-eingangsrechnungen@acribo.com"
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "dataTableId": {
+          "__rl": true,
+          "value": "3EZHkYswDkV3030Y",
+          "mode": "list",
+          "cachedResultName": "n8n_invoice_ocr_reporting",
+          "cachedResultUrl": "/projects/OrX0COEJWZYXeBir/datatables/3EZHkYswDkV3030Y"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "attachment_id",
+              "keyValue": "={{ $json.attachment_id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "attachment_id": "={{ $json.attachment_id }}",
+            "mail_id": "={{ $json.mail_id || $('Get a message').item.json.id }}",
+            "file_name": "={{ $json.fileName || $json.originalFileName }}",
+            "subject": "={{ $('Get a message').item.json.subject }}",
+            "from": "={{ $('Get a message').item.json.from }}",
+            "hasAttachments": "={{ $('Get a message').item.json.hasAttachments }}",
+            "ocr_status": "={{ $json.ocr_status || ($json.ocrFailed ? 'failed' : 'success') }}",
+            "fallback_reason": "={{ $json.fallbackReason || '' }}",
+            "forward_to": "acribo-invest-eingangsrechnungen@acribo.com"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "attachment_id",
+              "displayName": "attachment_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "mail_id",
+              "displayName": "mail_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "file_name",
+              "displayName": "file_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "from",
+              "displayName": "from",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "subject",
+              "displayName": "subject",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "hasAttachments",
+              "displayName": "hasAttachments",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "forward_to",
+              "displayName": "forward_to",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "ocr_status",
+              "displayName": "ocr_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "fallback_reason",
+              "displayName": "fallback_reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        336,
+        800
+      ],
+      "id": "9732be62-cede-4a53-a8f9-48f2ce45a3c5",
+      "name": "Logging - acribo-invest-eingangsrechnungen@acribo.com"
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "dataTableId": {
+          "__rl": true,
+          "value": "3EZHkYswDkV3030Y",
+          "mode": "list",
+          "cachedResultName": "n8n_invoice_ocr_reporting",
+          "cachedResultUrl": "/projects/OrX0COEJWZYXeBir/datatables/3EZHkYswDkV3030Y"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "attachment_id",
+              "keyValue": "={{ $json.attachment_id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "attachment_id": "={{ $json.attachment_id }}",
+            "mail_id": "={{ $json.mail_id || $('Get a message').item.json.id }}",
+            "file_name": "={{ $json.fileName || $json.originalFileName }}",
+            "subject": "={{ $('Get a message').item.json.subject }}",
+            "from": "={{ $('Get a message').item.json.from }}",
+            "hasAttachments": "={{ $('Get a message').item.json.hasAttachments }}",
+            "ocr_status": "={{ $json.ocr_status || ($json.ocrFailed ? 'failed' : 'success') }}",
+            "fallback_reason": "={{ $json.fallbackReason || '' }}",
+            "forward_to": "acribo-invest2-eingangsrechnungen@acribo.com"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "attachment_id",
+              "displayName": "attachment_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "mail_id",
+              "displayName": "mail_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "file_name",
+              "displayName": "file_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "from",
+              "displayName": "from",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "subject",
+              "displayName": "subject",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "hasAttachments",
+              "displayName": "hasAttachments",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "forward_to",
+              "displayName": "forward_to",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "ocr_status",
+              "displayName": "ocr_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "fallback_reason",
+              "displayName": "fallback_reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        336,
+        992
+      ],
+      "id": "275cb5c2-4089-4880-8699-09ea9d95f651",
+      "name": "Logging - acribo-invest2-eingangsrechnungen@acribo.com"
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "dataTableId": {
+          "__rl": true,
+          "value": "3EZHkYswDkV3030Y",
+          "mode": "list",
+          "cachedResultName": "n8n_invoice_ocr_reporting",
+          "cachedResultUrl": "/projects/OrX0COEJWZYXeBir/datatables/3EZHkYswDkV3030Y"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "attachment_id",
+              "keyValue": "={{ $json.attachment_id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "attachment_id": "={{ $json.attachment_id }}",
+            "mail_id": "={{ $json.mail_id || $('Get a message').item.json.id }}",
+            "file_name": "={{ $json.fileName || $json.originalFileName }}",
+            "subject": "={{ $('Get a message').item.json.subject }}",
+            "from": "={{ $('Get a message').item.json.from }}",
+            "hasAttachments": "={{ $('Get a message').item.json.hasAttachments }}",
+            "ocr_status": "={{ $json.ocr_status || ($json.ocrFailed ? 'failed' : 'success') }}",
+            "fallback_reason": "={{ $json.fallbackReason || '' }}",
+            "forward_to": "acribo-invest4-eingangsrechnungen@acribo.com"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "attachment_id",
+              "displayName": "attachment_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "mail_id",
+              "displayName": "mail_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "file_name",
+              "displayName": "file_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "from",
+              "displayName": "from",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "subject",
+              "displayName": "subject",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "hasAttachments",
+              "displayName": "hasAttachments",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "forward_to",
+              "displayName": "forward_to",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "ocr_status",
+              "displayName": "ocr_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "fallback_reason",
+              "displayName": "fallback_reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        336,
+        1184
+      ],
+      "id": "e3312020-f382-4fe0-9a88-13d64e3a0fc6",
+      "name": "Logging - acribo-invest4-eingangsrechnungen@acribo.com"
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "dataTableId": {
+          "__rl": true,
+          "value": "3EZHkYswDkV3030Y",
+          "mode": "list",
+          "cachedResultName": "n8n_invoice_ocr_reporting",
+          "cachedResultUrl": "/projects/OrX0COEJWZYXeBir/datatables/3EZHkYswDkV3030Y"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "attachment_id",
+              "keyValue": "={{ $json.attachment_id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "attachment_id": "={{ $json.attachment_id }}",
+            "mail_id": "={{ $json.mail_id || $('Get a message').item.json.id }}",
+            "file_name": "={{ $json.fileName || $json.originalFileName }}",
+            "subject": "={{ $('Get a message').item.json.subject }}",
+            "from": "={{ $('Get a message').item.json.from }}",
+            "hasAttachments": "={{ $('Get a message').item.json.hasAttachments }}",
+            "ocr_status": "={{ $json.ocr_status || ($json.ocrFailed ? 'failed' : 'success') }}",
+            "fallback_reason": "={{ $json.fallbackReason || '' }}",
+            "forward_to": "acribo-kroepcke-eingangsrechnungen@acribo.com"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "attachment_id",
+              "displayName": "attachment_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "mail_id",
+              "displayName": "mail_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "file_name",
+              "displayName": "file_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "from",
+              "displayName": "from",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "subject",
+              "displayName": "subject",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "hasAttachments",
+              "displayName": "hasAttachments",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "forward_to",
+              "displayName": "forward_to",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "ocr_status",
+              "displayName": "ocr_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "fallback_reason",
+              "displayName": "fallback_reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        336,
+        1376
+      ],
+      "id": "0ab194fe-4241-47df-8aef-7991a36b5cde",
+      "name": "Logging - acribo-kroepcke-eingangsrechnungen@acribo.com"
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "dataTableId": {
+          "__rl": true,
+          "value": "3EZHkYswDkV3030Y",
+          "mode": "list",
+          "cachedResultName": "n8n_invoice_ocr_reporting",
+          "cachedResultUrl": "/projects/OrX0COEJWZYXeBir/datatables/3EZHkYswDkV3030Y"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "attachment_id",
+              "keyValue": "={{ $json.attachment_id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "attachment_id": "={{ $json.attachment_id }}",
+            "mail_id": "={{ $json.mail_id || $('Get a message').item.json.id }}",
+            "file_name": "={{ $json.fileName || $json.originalFileName }}",
+            "subject": "={{ $('Get a message').item.json.subject }}",
+            "from": "={{ $('Get a message').item.json.from }}",
+            "hasAttachments": "={{ $('Get a message').item.json.hasAttachments }}",
+            "ocr_status": "={{ $json.ocr_status || ($json.ocrFailed ? 'failed' : 'success') }}",
+            "fallback_reason": "={{ $json.fallbackReason || '' }}",
+            "forward_to": "acribo-bunke-eingangsrechnungen@acribo.com"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "attachment_id",
+              "displayName": "attachment_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "mail_id",
+              "displayName": "mail_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "file_name",
+              "displayName": "file_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "from",
+              "displayName": "from",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "subject",
+              "displayName": "subject",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "hasAttachments",
+              "displayName": "hasAttachments",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "forward_to",
+              "displayName": "forward_to",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "ocr_status",
+              "displayName": "ocr_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "fallback_reason",
+              "displayName": "fallback_reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        336,
+        1568
+      ],
+      "id": "46d705d9-5c5e-4cae-93a6-68376aebee2e",
+      "name": "Logging - acribo-bunke-eingangsrechnungen@acribo.com"
+    },
+    {
+      "parameters": {
+        "operation": "upsert",
+        "dataTableId": {
+          "__rl": true,
+          "value": "3EZHkYswDkV3030Y",
+          "mode": "list",
+          "cachedResultName": "n8n_invoice_ocr_reporting",
+          "cachedResultUrl": "/projects/OrX0COEJWZYXeBir/datatables/3EZHkYswDkV3030Y"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "attachment_id",
+              "keyValue": "={{ $json.attachment_id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "attachment_id": "={{ $json.attachment_id }}",
+            "mail_id": "={{ $json.mail_id || $('Get a message').item.json.id }}",
+            "file_name": "={{ $json.fileName || $json.originalFileName }}",
+            "subject": "={{ $('Get a message').item.json.subject }}",
+            "from": "={{ $('Get a message').item.json.from }}",
+            "hasAttachments": "={{ $('Get a message').item.json.hasAttachments }}",
+            "ocr_status": "={{ $json.ocr_status || ($json.ocrFailed ? 'failed' : 'success') }}",
+            "fallback_reason": "={{ $json.fallbackReason || '' }}",
+            "forward_to": "fi@acribo.com"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "attachment_id",
+              "displayName": "attachment_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "mail_id",
+              "displayName": "mail_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "file_name",
+              "displayName": "file_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "from",
+              "displayName": "from",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "subject",
+              "displayName": "subject",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "hasAttachments",
+              "displayName": "hasAttachments",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "forward_to",
+              "displayName": "forward_to",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "ocr_status",
+              "displayName": "ocr_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "fallback_reason",
+              "displayName": "fallback_reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        336,
+        1760
+      ],
+      "id": "7682c076-dbbe-43fa-a218-bbe7bca0b07e",
+      "name": "Logging - Fallback"
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "value": "3EZHkYswDkV3030Y",
+          "mode": "list",
+          "cachedResultName": "n8n_invoice_ocr_reporting",
+          "cachedResultUrl": "/projects/OrX0COEJWZYXeBir/datatables/3EZHkYswDkV3030Y"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "attachment_id": "={{ $json.attachment_id }}",
+            "mail_id": "={{ $json.mail_id }}",
+            "file_name": "={{ $json.fileName || $json.originalFileName }}",
+            "from": "={{ $('Get a message').item.json.from }}",
+            "subject": "={{ $('Get a message').item.json.subject }}",
+            "hasAttachments": "={{ $('Get a message').item.json.hasAttachments }}",
+            "ocr_status": "processing"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "attachment_id",
+              "displayName": "attachment_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "mail_id",
+              "displayName": "mail_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "file_name",
+              "displayName": "file_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "from",
+              "displayName": "from",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "subject",
+              "displayName": "subject",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "hasAttachments",
+              "displayName": "hasAttachments",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "forward_to",
+              "displayName": "forward_to",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "ocr_status",
+              "displayName": "ocr_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "fallback_reason",
+              "displayName": "fallback_reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {},
+        "operation": "upsert",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "attachment_id",
+              "keyValue": "={{ $json.attachment_id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        -2320,
+        592
+      ],
+      "id": "e27dab05-2ea9-4c5d-b3c1-795e9a7f2770",
+      "name": "Insert Run"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -4000,
+        1120
+      ],
+      "id": "cac99c09-0cbc-4f07-962f-114a030dd190",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "jsCode": "const originalItems = $('Convert attachments to seperate items').all();\nconst inputItems = $input.all();\n\nconst ROUTES = [\n  { id: 'invest4', patterns: [/acribo\\s*invest\\s*(iv|4)/i] },\n  { id: 'invest2', patterns: [/acribo\\s*invest\\s*(ii|2)/i] },\n  { id: 'invest', patterns: [/acribo\\s*invest/i] },\n  { id: 'grundbesitz', patterns: [/acribo\\s*grundbesitz/i] },\n  { id: 'energie', patterns: [/acribo\\s*energie/i] },\n  { id: 'service', patterns: [/acribo\\s*service/i] },\n  { id: 'kroepcke', patterns: [/kr[öo]pcke|caf[eé]\\s*am\\s*kr[öo]pcke/i] },\n  { id: 'bunke', patterns: [/bunke|ingunde\\s*bunke/i] },\n  { id: 'gmbh', patterns: [/acribo\\s*gmbh/i] },\n];\n\nfunction collectText(value) {\n  const parts = [];\n  const walk = (obj) => {\n    if (obj == null) return;\n    if (typeof obj === 'string') { parts.push(obj); return; }\n    if (Array.isArray(obj)) { obj.forEach(walk); return; }\n    if (typeof obj === 'object') Object.values(obj).forEach(walk);\n  };\n  walk(value);\n  return parts.join(' ');\n}\n\nfunction findRoute(extracted) {\n  const customerText = collectText(extracted?.customer_information);\n  for (const route of ROUTES) {\n    if (route.patterns.some((p) => p.test(customerText))) return route.id;\n  }\n  const fullText = collectText(extracted);\n  for (const route of ROUTES) {\n    if (route.patterns.some((p) => p.test(fullText))) return route.id;\n  }\n  return 'fallback';\n}\n\nfunction resolveOriginal(item, index) {\n  return (\n    originalItems[index] ||\n    originalItems.find((o) => o.json.mergeKey === item.json.mergeKey) ||\n    originalItems.find((o) => o.json.attachment_id === item.json.attachment_id)\n  );\n}\n\nfunction buildFallback(original, item, reason, extra = {}) {\n  return {\n    json: {\n      ...original.json,\n      routeTarget: 'fallback',\n      ocrFailed: true,\n      fallbackReason: reason,\n      ocr_status: extra.ocr_status || 'failed',\n      ocr_error: extra.ocr_error || null,\n      detected_customer: extra.detected_customer || null,\n      detected_merchant: extra.detected_merchant || null,\n    },\n    binary: original.binary,\n  };\n}\n\nreturn inputItems.map((item, index) => {\n  const original = resolveOriginal(item, index);\n  if (!original) {\n    throw new Error(`Kein Original-Anhang für Item ${index} gefunden.`);\n  }\n\n  if (item.json.decryptFailed || item.json.routeTarget === 'fallback') {\n    return buildFallback(original, item, item.json.fallbackReason || 'decrypt_failed', {\n      ocr_error: item.json.decrypt_error || null,\n    });\n  }\n\n  const provider = item.json['openai/gpt-4o'] || {};\n  const extracted = provider.extracted_data?.[0];\n  const httpError = item.json.error?.message || item.json.message;\n  const providerError = provider.error?.message || (typeof provider.error === 'string' ? provider.error : null);\n  const hasError =\n    !!httpError ||\n    !!providerError ||\n    !extracted ||\n    (provider.status && provider.status !== 'success');\n\n  if (hasError) {\n    return buildFallback(original, item, 'ocr_failed', {\n      ocr_status: provider.status || 'error',\n      ocr_error: providerError || httpError || 'OCR fehlgeschlagen (z.B. verschlüsselte PDF)',\n    });\n  }\n\n  const routeTarget = findRoute(extracted);\n\n  if (routeTarget === 'fallback') {\n    return buildFallback(original, item, 'no_company_match', {\n      ocr_status: provider.status || 'success',\n      detected_customer: extracted.customer_information?.name || null,\n      detected_merchant: extracted.merchant_information?.name || null,\n    });\n  }\n\n  return {\n    json: {\n      ...original.json,\n      routeTarget,\n      ocrFailed: false,\n      fallbackReason: null,\n      ocr_status: provider.status || 'success',\n      detected_customer: extracted.customer_information?.name || null,\n      detected_merchant: extracted.merchant_information?.name || null,\n    },\n    binary: original.binary,\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -960,
+        1440
+      ],
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "name": "Evaluate OCR & Route"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "decrypt-failed-check",
+              "leftValue": "={{ $json.decryptFailed }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -2048,
+        1280
+      ],
+      "id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+      "name": "If decrypt failed"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "EdenAI Invoice Parser": {
+      "main": [
+        [
+          {
+            "node": "Evaluate OCR & Route",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Evaluate OCR & Route",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert attachments to seperate items": {
+      "main": [
+        [
+          {
+            "node": "Insert Run",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark message as read": {
+      "main": [
+        []
+      ]
+    },
+    "Switch - Mail according to customer": {
+      "main": [
+        [
+          {
+            "node": "Mail to Acribo GMBH",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mail to ACRIBO Grundbesitz",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mail to ACRIBO Energie",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mail to ACRIBO Service",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mail to ACRIBO invest",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mail to ACRIBO invest 2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mail to ACRIBO invest 4",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mail to Kröpcke",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mail to Bunke",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fallback Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get many messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get many messages": {
+      "main": [
+        [
+          {
+            "node": "Get a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a message": {
+      "main": [
+        [
+          {
+            "node": "Mark message as read",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Convert attachments to seperate items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Check if encrypted",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "EdenAI Invoice Parser",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check if encrypted": {
+      "main": [
+        [
+          {
+            "node": "Write to disk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write to disk": {
+      "main": [
+        [
+          {
+            "node": "Decrypt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decrypt": {
+      "main": [
+        [
+          {
+            "node": "If decrypt failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read decrypted pdf": {
+      "main": [
+        [
+          {
+            "node": "get meta data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get meta data": {
+      "main": [
+        [
+          {
+            "node": "EdenAI Invoice Parser",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fallback Message": {
+      "main": [
+        [
+          {
+            "node": "Logging - Fallback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mail to Acribo GMBH": {
+      "main": [
+        [
+          {
+            "node": "Logging - acribo-gmbh-eingangsrechnungen@acribo.com",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mail to ACRIBO Grundbesitz": {
+      "main": [
+        [
+          {
+            "node": "Logging - acribo-grundbesitz-eingangsrechnungen@acribo.com",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mail to ACRIBO Energie": {
+      "main": [
+        [
+          {
+            "node": "Logging - acribo-energie-eingangsrechnungen@acribo.com",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mail to ACRIBO Service": {
+      "main": [
+        [
+          {
+            "node": "Logging - acribo-service-eingangsrechnungen@acribo.com",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mail to ACRIBO invest": {
+      "main": [
+        [
+          {
+            "node": "Logging - acribo-invest-eingangsrechnungen@acribo.com",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mail to ACRIBO invest 2": {
+      "main": [
+        [
+          {
+            "node": "Logging - acribo-invest2-eingangsrechnungen@acribo.com",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mail to ACRIBO invest 4": {
+      "main": [
+        [
+          {
+            "node": "Logging - acribo-invest4-eingangsrechnungen@acribo.com",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mail to Kröpcke": {
+      "main": [
+        [
+          {
+            "node": "Logging - acribo-kroepcke-eingangsrechnungen@acribo.com",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mail to Bunke": {
+      "main": [
+        [
+          {
+            "node": "Logging - acribo-bunke-eingangsrechnungen@acribo.com",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Logging - acribo-gmbh-eingangsrechnungen@acribo.com": {
+      "main": [
+        []
+      ]
+    },
+    "Logging - acribo-kroepcke-eingangsrechnungen@acribo.com": {
+      "main": [
+        []
+      ]
+    },
+    "Logging - Fallback": {
+      "main": [
+        []
+      ]
+    },
+    "Insert Run": {
+      "main": [
+        []
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Get many messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If decrypt failed": {
+      "main": [
+        [
+          {
+            "node": "Evaluate OCR & Route",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Read decrypted pdf",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Evaluate OCR & Route": {
+      "main": [
+        [
+          {
+            "node": "Switch - Mail according to customer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "e9d42e15-9be5-4cc0-b10d-0ceb45eabefd",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "0de3b10c758adc5c31c601b0a5fe04d246df1ba782299ad8498e762c89eec586"
+  },
+  "id": "13Jl4kvpbK7bvC3E",
+  "tags": [
+    {
+      "updatedAt": "2026-05-19T09:56:44.249Z",
+      "createdAt": "2026-05-19T09:56:44.249Z",
+      "id": "RjBmZbtpTCQ8g1mU",
+      "name": "customer"
+    }
+  ]
+}
