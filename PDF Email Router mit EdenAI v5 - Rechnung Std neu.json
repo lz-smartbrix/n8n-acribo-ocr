@@ -69,7 +69,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const outputItems = [];\nconst inputItem = $input.first();\nconst binaryData = inputItem.binary || {};\nconst mailId = inputItem.json.id || 'unknown';\nlet index = 0;\n\nfor (const [binaryKey, binaryValue] of Object.entries(binaryData)) {\n  if (!binaryKey.startsWith('attachment_')) continue;\n\n  const fileName = (binaryValue.fileName || '').toLowerCase();\n  const mimeType = (binaryValue.mimeType || '').toLowerCase();\n  const fileExtension = (binaryValue.fileExtension || '').toLowerCase();\n\n  const istPDF =\n    mimeType === 'application/pdf' ||\n    fileName.endsWith('.pdf') ||\n    fileExtension === 'pdf';\n\n  const istSignierteDatei =\n    mimeType === 'multipart/signed' ||\n    mimeType === 'application/pkcs7-mime' ||\n    mimeType === 'application/x-pkcs7-mime' ||\n    mimeType === 'application/pkcs7-signature' ||\n    mimeType === 'application/x-pkcs7-signature' ||\n    fileName.endsWith('.p7m') ||\n    fileExtension === 'p7m';\n\n  if (!istPDF && !istSignierteDatei) continue;\n\n  const attachment_id = `${mailId}_${index}`;\n  const mergeKey = attachment_id;\n\n  const outputFileName = istPDF\n    ? binaryValue.fileName\n    : (binaryValue.fileName || `attachment_${index}.p7m`).replace(/\\.p7m$/i, '.pdf');\n\n  outputItems.push({\n    json: {\n      ...inputItem.json,\n      mail_id: mailId,\n      attachment_id,\n      attachment_index: index,\n      fileName: binaryValue.fileName,\n      originalFileName: binaryValue.fileName,\n      outputFileName,\n      mimeType,\n      originalMimeType: mimeType,\n      fileExtension,\n      istPDF,\n      istSignierteDatei,\n      brauchtEntpackung: istSignierteDatei && !istPDF,\n      inputPath: `/home/node/.n8n-files/${mergeKey}.p7m`,\n      outputPath: `/home/node/.n8n-files/${mergeKey}.pdf`,\n      mergeKey,\n      originalBinaryKey: binaryKey,\n    },\n    binary: { data: binaryValue },\n  });\n\n  index++;\n}\n\nif (outputItems.length === 0) {\n  return [{\n    json: {\n      ...inputItem.json,\n      mail_id: mailId,\n      attachment_id: `${mailId}_none`,\n      noValidAttachments: true,\n      routeTarget: 'fallback',\n      fallbackReason: 'no_valid_attachment',\n      ocr_status: 'failed',\n      ocr_error: 'Keine PDF- oder P7M-Anhänge in der Mail gefunden.',\n    },\n  }];\n}\n\nreturn outputItems;"
+        "jsCode": "const outputItems = [];\nconst inputItem = $input.first();\nconst binaryData = inputItem.binary || {};\nconst mailId = inputItem.json.id || 'unknown';\nlet index = 0;\n\nfor (const [binaryKey, binaryValue] of Object.entries(binaryData)) {\n  if (!binaryKey.startsWith('attachment_')) continue;\n\n  const fileName = (binaryValue.fileName || '').toLowerCase();\n  const mimeType = (binaryValue.mimeType || '').toLowerCase();\n  const fileExtension = (binaryValue.fileExtension || '').toLowerCase();\n\n  const istPDF =\n    mimeType === 'application/pdf' ||\n    fileName.endsWith('.pdf') ||\n    fileExtension === 'pdf';\n\n  const istSignierteDatei =\n    mimeType === 'multipart/signed' ||\n    mimeType === 'application/pkcs7-mime' ||\n    mimeType === 'application/x-pkcs7-mime' ||\n    mimeType === 'application/pkcs7-signature' ||\n    mimeType === 'application/x-pkcs7-signature' ||\n    fileName.endsWith('.p7m') ||\n    fileExtension === 'p7m';\n\n  if (!istPDF && !istSignierteDatei) continue;\n\n  const attachment_id = `${mailId}_${index}`;\n  const mergeKey = attachment_id;\n\n  const outputFileName = istPDF\n    ? binaryValue.fileName\n    : (binaryValue.fileName || `attachment_${index}.p7m`).replace(/\\.p7m$/i, '.pdf');\n\n  outputItems.push({\n    json: {\n      ...inputItem.json,\n      mail_id: mailId,\n      attachment_id,\n      attachment_index: index,\n      fileName: binaryValue.fileName,\n      originalFileName: binaryValue.fileName,\n      outputFileName,\n      mimeType,\n      originalMimeType: mimeType,\n      fileExtension,\n      istPDF,\n      istSignierteDatei,\n      brauchtEntpackung: istSignierteDatei && !istPDF,\n      inputPath: `/home/node/.n8n-files/${mergeKey}.p7m`,\n      outputPath: `/home/node/.n8n-files/${mergeKey}.pdf`,\n      mergeKey,\n      originalBinaryKey: binaryKey,\n    },\n    binary: { data: binaryValue },\n  });\n\n  index++;\n}\n\nif (outputItems.length === 0) {\n  return [{\n    json: {\n      ...inputItem.json,\n      mail_id: mailId,\n      attachment_id: `${mailId}_none`,\n      noValidAttachments: true,\n      routeTarget: 'fallback',\n      fallbackReason: 'no_valid_attachment',\n      ocr_status: 'skipped',\n      ocr_error: 'Keine PDF- oder P7M-Anhaenge in der Mail gefunden.',\n    },\n  }];\n}\n\nreturn outputItems;"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -2064,21 +2064,21 @@
           "conditions": [
             {
               "keyName": "attachment_id",
-              "keyValue": "={{ $('Evaluate OCR & Route').isExecuted ? $('Evaluate OCR & Route').item.json.attachment_id : $('Convert attachments to seperate items').item.json.attachment_id }}"
+              "keyValue": "={{ $('Evaluate OCR & Route').item.json.attachment_id }}"
             }
           ]
         },
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
-            "attachment_id": "={{ $('Evaluate OCR & Route').isExecuted ? $('Evaluate OCR & Route').item.json.attachment_id : $('Convert attachments to seperate items').item.json.attachment_id }}",
-            "mail_id": "={{ $('Evaluate OCR & Route').isExecuted ? ($('Evaluate OCR & Route').item.json.mail_id || $('Get a message').item.json.id) : ($('Convert attachments to seperate items').item.json.mail_id || $('Get a message').item.json.id) }}",
-            "file_name": "={{ $('Evaluate OCR & Route').isExecuted ? ($('Evaluate OCR & Route').item.json.fileName || $('Evaluate OCR & Route').item.json.originalFileName || '') : ($('Convert attachments to seperate items').item.json.fileName || '') }}",
+            "attachment_id": "={{ $('Evaluate OCR & Route').item.json.attachment_id }}",
+            "mail_id": "={{ $('Evaluate OCR & Route').item.json.mail_id || $('Get a message').item.json.id }}",
+            "file_name": "={{ $('Evaluate OCR & Route').item.json.fileName || $('Evaluate OCR & Route').item.json.originalFileName || '' }}",
             "subject": "={{ $('Get a message').item.json.subject }}",
             "from": "={{ $('Get a message').item.json.from }}",
             "hasAttachments": "={{ $('Get a message').item.json.hasAttachments }}",
-            "ocr_status": "={{ $('Evaluate OCR & Route').isExecuted ? ($('Evaluate OCR & Route').item.json.ocr_status || ($('Evaluate OCR & Route').item.json.ocrFailed ? 'failed' : 'success')) : 'failed' }}",
-            "fallback_reason": "={{ $('Evaluate OCR & Route').isExecuted ? ($('Evaluate OCR & Route').item.json.fallbackReason || '') : ($('Convert attachments to seperate items').item.json.fallbackReason || 'no_valid_attachment') }}",
+            "ocr_status": "={{ $('Evaluate OCR & Route').item.json.ocr_status || ($('Evaluate OCR & Route').item.json.ocrFailed ? 'failed' : 'success') }}",
+            "fallback_reason": "={{ $('Evaluate OCR & Route').item.json.fallbackReason || '' }}",
             "forward_to": "fi@acribo.com"
           },
           "matchingColumns": [],
@@ -2418,25 +2418,141 @@
     },
     {
       "parameters": {
-        "toRecipients": "fi@acribo.com",
-        "subject": "SMARTBRIX - Mail ohne PDF/P7M-Anhang",
-        "bodyContent": "Sehr geehrte Damen und Herren,\n\neine Mail im Postfach rechnung@acribo.com enthielt keine verarbeitbaren PDF- oder P7M-Anhänge.\n\nBetreff: {{ $('Get a message').item.json.subject }}\nAbsender: {{ $('Get a message').item.json.from }}\n\nBitte manuell prüfen und zuordnen.",
-        "additionalFields": {}
+        "operation": "upsert",
+        "dataTableId": {
+          "__rl": true,
+          "value": "3EZHkYswDkV3030Y",
+          "mode": "list",
+          "cachedResultName": "n8n_invoice_ocr_reporting",
+          "cachedResultUrl": "/projects/OrX0COEJWZYXeBir/datatables/3EZHkYswDkV3030Y"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "attachment_id",
+              "keyValue": "={{ $json.attachment_id }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "attachment_id": "={{ $json.attachment_id }}",
+            "mail_id": "={{ $json.mail_id || $('Get a message').item.json.id }}",
+            "file_name": "",
+            "subject": "={{ $('Get a message').item.json.subject }}",
+            "from": "={{ $('Get a message').item.json.from }}",
+            "hasAttachments": "={{ $('Get a message').item.json.hasAttachments }}",
+            "ocr_status": "skipped",
+            "fallback_reason": "no_valid_attachment",
+            "forward_to": "(kein Anhang – nicht weitergeleitet)"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "attachment_id",
+              "displayName": "attachment_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "mail_id",
+              "displayName": "mail_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "file_name",
+              "displayName": "file_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "from",
+              "displayName": "from",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "subject",
+              "displayName": "subject",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "hasAttachments",
+              "displayName": "hasAttachments",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "forward_to",
+              "displayName": "forward_to",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "ocr_status",
+              "displayName": "ocr_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "fallback_reason",
+              "displayName": "fallback_reason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
       },
-      "type": "n8n-nodes-base.microsoftOutlook",
-      "typeVersion": 2,
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
       "position": [
-        -480,
+        336,
         1952
       ],
-      "id": "d4e5f6a7-b8c9-0123-def0-456789012345",
-      "name": "Fallback - no PDF attachment",
-      "credentials": {
-        "microsoftOutlookOAuth2Api": {
-          "id": "Pydw2OiP5zm2Xqv9",
-          "name": "acribo-ocr@smartbrix.io"
-        }
-      }
+      "id": "e5f6a7b8-c9d0-1234-ef01-567890123456",
+      "name": "Logging - no attachment"
     }
   ],
   "pinData": {},
@@ -2847,7 +2963,7 @@
       "main": [
         [
           {
-            "node": "Fallback - no PDF attachment",
+            "node": "Logging - no attachment",
             "type": "main",
             "index": 0
           }
@@ -2860,17 +2976,6 @@
           },
           {
             "node": "If1",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Fallback - no PDF attachment": {
-      "main": [
-        [
-          {
-            "node": "Logging - Fallback",
             "type": "main",
             "index": 0
           }
@@ -2944,6 +3049,17 @@
       ]
     },
     "Logging - acribo-bunke-eingangsrechnungen@acribo.com": {
+      "main": [
+        [
+          {
+            "node": "Mark message as read",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Logging - no attachment": {
       "main": [
         [
           {
