@@ -822,21 +822,21 @@
           "conditions": [
             {
               "keyName": "attachment_id",
-              "keyValue": "={{ $json.attachment_id }}"
+              "keyValue": "={{ $('Evaluate OCR & Route').item.json.attachment_id }}"
             }
           ]
         },
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
-            "attachment_id": "={{ $json.attachment_id }}",
-            "mail_id": "={{ $json.mail_id || $('Get a message').item.json.id }}",
-            "file_name": "={{ $json.fileName || $json.originalFileName }}",
+            "attachment_id": "={{ $('Evaluate OCR & Route').item.json.attachment_id }}",
+            "mail_id": "={{ $('Evaluate OCR & Route').item.json.mail_id || $('Get a message').item.json.id }}",
+            "file_name": "={{ $('Evaluate OCR & Route').item.json.fileName || $('Evaluate OCR & Route').item.json.originalFileName || '' }}",
             "subject": "={{ $('Get a message').item.json.subject }}",
             "from": "={{ $('Get a message').item.json.from }}",
             "hasAttachments": "={{ $('Get a message').item.json.hasAttachments }}",
-            "ocr_status": "={{ $json.ocr_status || ($json.ocrFailed ? 'failed' : 'success') }}",
-            "fallback_reason": "={{ $json.fallbackReason || '' }}",
+            "ocr_status": "={{ $('Evaluate OCR & Route').item.json.ocr_status || ($('Evaluate OCR & Route').item.json.ocrFailed ? 'failed' : 'success') }}",
+            "fallback_reason": "={{ $('Evaluate OCR & Route').item.json.fallbackReason || '' }}",
             "forward_to": "acribo-gmbh-eingangsrechnungen@acribo.com"
           },
           "matchingColumns": [],
@@ -960,21 +960,21 @@
           "conditions": [
             {
               "keyName": "attachment_id",
-              "keyValue": "={{ $json.attachment_id }}"
+              "keyValue": "={{ $('Evaluate OCR & Route').item.json.attachment_id }}"
             }
           ]
         },
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
-            "attachment_id": "={{ $json.attachment_id }}",
-            "mail_id": "={{ $json.mail_id || $('Get a message').item.json.id }}",
-            "file_name": "={{ $json.fileName || $json.originalFileName }}",
+            "attachment_id": "={{ $('Evaluate OCR & Route').item.json.attachment_id }}",
+            "mail_id": "={{ $('Evaluate OCR & Route').item.json.mail_id || $('Get a message').item.json.id }}",
+            "file_name": "={{ $('Evaluate OCR & Route').item.json.fileName || $('Evaluate OCR & Route').item.json.originalFileName || '' }}",
             "subject": "={{ $('Get a message').item.json.subject }}",
             "from": "={{ $('Get a message').item.json.from }}",
             "hasAttachments": "={{ $('Get a message').item.json.hasAttachments }}",
-            "ocr_status": "={{ $json.ocr_status || ($json.ocrFailed ? 'failed' : 'success') }}",
-            "fallback_reason": "={{ $json.fallbackReason || '' }}",
+            "ocr_status": "={{ $('Evaluate OCR & Route').item.json.ocr_status || ($('Evaluate OCR & Route').item.json.ocrFailed ? 'failed' : 'success') }}",
+            "fallback_reason": "={{ $('Evaluate OCR & Route').item.json.fallbackReason || '' }}",
             "forward_to": "acribo-grundbesitz-eingangsrechnungen@acribo.com"
           },
           "matchingColumns": [],
@@ -1098,21 +1098,21 @@
           "conditions": [
             {
               "keyName": "attachment_id",
-              "keyValue": "={{ $json.attachment_id }}"
+              "keyValue": "={{ $('Evaluate OCR & Route').item.json.attachment_id }}"
             }
           ]
         },
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
-            "attachment_id": "={{ $json.attachment_id }}",
-            "mail_id": "={{ $json.mail_id || $('Get a message').item.json.id }}",
-            "file_name": "={{ $json.fileName || $json.originalFileName }}",
+            "attachment_id": "={{ $('Evaluate OCR & Route').item.json.attachment_id }}",
+            "mail_id": "={{ $('Evaluate OCR & Route').item.json.mail_id || $('Get a message').item.json.id }}",
+            "file_name": "={{ $('Evaluate OCR & Route').item.json.fileName || $('Evaluate OCR & Route').item.json.originalFileName || '' }}",
             "subject": "={{ $('Get a message').item.json.subject }}",
             "from": "={{ $('Get a message').item.json.from }}",
             "hasAttachments": "={{ $('Get a message').item.json.hasAttachments }}",
-            "ocr_status": "={{ $json.ocr_status || ($json.ocrFailed ? 'failed' : 'success') }}",
-            "fallback_reason": "={{ $json.fallbackReason || '' }}",
+            "ocr_status": "={{ $('Evaluate OCR & Route').item.json.ocr_status || ($('Evaluate OCR & Route').item.json.ocrFailed ? 'failed' : 'success') }}",
+            "fallback_reason": "={{ $('Evaluate OCR & Route').item.json.fallbackReason || '' }}",
             "forward_to": "acribo-energie-eingangsrechnungen@acribo.com"
           },
           "matchingColumns": [],
@@ -1236,21 +1236,21 @@
           "conditions": [
             {
               "keyName": "attachment_id",
-              "keyValue": "={{ $json.attachment_id }}"
+              "keyValue": "={{ $('Evaluate OCR & Route').item.json.attachment_id }}"
             }
           ]
         },
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
-            "attachment_id": "={{ $json.attachment_id }}",
-            "mail_id": "={{ $json.mail_id || $('Get a message').item.json.id }}",
-            "file_name": "={{ $json.fileName || $json.originalFileName }}",
+            "attachment_id": "={{ $('Evaluate OCR & Route').item.json.attachment_id }}",
+            "mail_id": "={{ $('Evaluate OCR & Route').item.json.mail_id || $('Get a message').item.json.id }}",
+            "file_name": "={{ $('Evaluate OCR & Route').item.json.fileName || $('Evaluate OCR & Route').item.json.originalFileName || '' }}",
             "subject": "={{ $('Get a message').item.json.subject }}",
             "from": "={{ $('Get a message').item.json.from }}",
             "hasAttachments": "={{ $('Get a message').item.json.hasAttachments }}",
-            "ocr_status": "={{ $json.ocr_status || ($json.ocrFailed ? 'failed' : 'success') }}",
-            "fallback_reason": "={{ $json.fallbackReason || '' }}",
+            "ocr_status": "={{ $('Evaluate OCR & Route').item.json.ocr_status || ($('Evaluate OCR & Route').item.json.ocrFailed ? 'failed' : 'success') }}",
+            "fallback_reason": "={{ $('Evaluate OCR & Route').item.json.fallbackReason || '' }}",
             "forward_to": "acribo-service-eingangsrechnungen@acribo.com"
           },
           "matchingColumns": [],
@@ -1374,21 +1374,21 @@
           "conditions": [
             {
               "keyName": "attachment_id",
-              "keyValue": "={{ $json.attachment_id }}"
+              "keyValue": "={{ $('Evaluate OCR & Route').item.json.attachment_id }}"
             }
           ]
         },
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
-            "attachment_id": "={{ $json.attachment_id }}",
-            "mail_id": "={{ $json.mail_id || $('Get a message').item.json.id }}",
-            "file_name": "={{ $json.fileName || $json.originalFileName }}",
+            "attachment_id": "={{ $('Evaluate OCR & Route').item.json.attachment_id }}",
+            "mail_id": "={{ $('Evaluate OCR & Route').item.json.mail_id || $('Get a message').item.json.id }}",
+            "file_name": "={{ $('Evaluate OCR & Route').item.json.fileName || $('Evaluate OCR & Route').item.json.originalFileName || '' }}",
             "subject": "={{ $('Get a message').item.json.subject }}",
             "from": "={{ $('Get a message').item.json.from }}",
             "hasAttachments": "={{ $('Get a message').item.json.hasAttachments }}",
-            "ocr_status": "={{ $json.ocr_status || ($json.ocrFailed ? 'failed' : 'success') }}",
-            "fallback_reason": "={{ $json.fallbackReason || '' }}",
+            "ocr_status": "={{ $('Evaluate OCR & Route').item.json.ocr_status || ($('Evaluate OCR & Route').item.json.ocrFailed ? 'failed' : 'success') }}",
+            "fallback_reason": "={{ $('Evaluate OCR & Route').item.json.fallbackReason || '' }}",
             "forward_to": "acribo-invest-eingangsrechnungen@acribo.com"
           },
           "matchingColumns": [],
@@ -1512,21 +1512,21 @@
           "conditions": [
             {
               "keyName": "attachment_id",
-              "keyValue": "={{ $json.attachment_id }}"
+              "keyValue": "={{ $('Evaluate OCR & Route').item.json.attachment_id }}"
             }
           ]
         },
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
-            "attachment_id": "={{ $json.attachment_id }}",
-            "mail_id": "={{ $json.mail_id || $('Get a message').item.json.id }}",
-            "file_name": "={{ $json.fileName || $json.originalFileName }}",
+            "attachment_id": "={{ $('Evaluate OCR & Route').item.json.attachment_id }}",
+            "mail_id": "={{ $('Evaluate OCR & Route').item.json.mail_id || $('Get a message').item.json.id }}",
+            "file_name": "={{ $('Evaluate OCR & Route').item.json.fileName || $('Evaluate OCR & Route').item.json.originalFileName || '' }}",
             "subject": "={{ $('Get a message').item.json.subject }}",
             "from": "={{ $('Get a message').item.json.from }}",
             "hasAttachments": "={{ $('Get a message').item.json.hasAttachments }}",
-            "ocr_status": "={{ $json.ocr_status || ($json.ocrFailed ? 'failed' : 'success') }}",
-            "fallback_reason": "={{ $json.fallbackReason || '' }}",
+            "ocr_status": "={{ $('Evaluate OCR & Route').item.json.ocr_status || ($('Evaluate OCR & Route').item.json.ocrFailed ? 'failed' : 'success') }}",
+            "fallback_reason": "={{ $('Evaluate OCR & Route').item.json.fallbackReason || '' }}",
             "forward_to": "acribo-invest2-eingangsrechnungen@acribo.com"
           },
           "matchingColumns": [],
@@ -1650,21 +1650,21 @@
           "conditions": [
             {
               "keyName": "attachment_id",
-              "keyValue": "={{ $json.attachment_id }}"
+              "keyValue": "={{ $('Evaluate OCR & Route').item.json.attachment_id }}"
             }
           ]
         },
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
-            "attachment_id": "={{ $json.attachment_id }}",
-            "mail_id": "={{ $json.mail_id || $('Get a message').item.json.id }}",
-            "file_name": "={{ $json.fileName || $json.originalFileName }}",
+            "attachment_id": "={{ $('Evaluate OCR & Route').item.json.attachment_id }}",
+            "mail_id": "={{ $('Evaluate OCR & Route').item.json.mail_id || $('Get a message').item.json.id }}",
+            "file_name": "={{ $('Evaluate OCR & Route').item.json.fileName || $('Evaluate OCR & Route').item.json.originalFileName || '' }}",
             "subject": "={{ $('Get a message').item.json.subject }}",
             "from": "={{ $('Get a message').item.json.from }}",
             "hasAttachments": "={{ $('Get a message').item.json.hasAttachments }}",
-            "ocr_status": "={{ $json.ocr_status || ($json.ocrFailed ? 'failed' : 'success') }}",
-            "fallback_reason": "={{ $json.fallbackReason || '' }}",
+            "ocr_status": "={{ $('Evaluate OCR & Route').item.json.ocr_status || ($('Evaluate OCR & Route').item.json.ocrFailed ? 'failed' : 'success') }}",
+            "fallback_reason": "={{ $('Evaluate OCR & Route').item.json.fallbackReason || '' }}",
             "forward_to": "acribo-invest4-eingangsrechnungen@acribo.com"
           },
           "matchingColumns": [],
@@ -1788,21 +1788,21 @@
           "conditions": [
             {
               "keyName": "attachment_id",
-              "keyValue": "={{ $json.attachment_id }}"
+              "keyValue": "={{ $('Evaluate OCR & Route').item.json.attachment_id }}"
             }
           ]
         },
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
-            "attachment_id": "={{ $json.attachment_id }}",
-            "mail_id": "={{ $json.mail_id || $('Get a message').item.json.id }}",
-            "file_name": "={{ $json.fileName || $json.originalFileName }}",
+            "attachment_id": "={{ $('Evaluate OCR & Route').item.json.attachment_id }}",
+            "mail_id": "={{ $('Evaluate OCR & Route').item.json.mail_id || $('Get a message').item.json.id }}",
+            "file_name": "={{ $('Evaluate OCR & Route').item.json.fileName || $('Evaluate OCR & Route').item.json.originalFileName || '' }}",
             "subject": "={{ $('Get a message').item.json.subject }}",
             "from": "={{ $('Get a message').item.json.from }}",
             "hasAttachments": "={{ $('Get a message').item.json.hasAttachments }}",
-            "ocr_status": "={{ $json.ocr_status || ($json.ocrFailed ? 'failed' : 'success') }}",
-            "fallback_reason": "={{ $json.fallbackReason || '' }}",
+            "ocr_status": "={{ $('Evaluate OCR & Route').item.json.ocr_status || ($('Evaluate OCR & Route').item.json.ocrFailed ? 'failed' : 'success') }}",
+            "fallback_reason": "={{ $('Evaluate OCR & Route').item.json.fallbackReason || '' }}",
             "forward_to": "acribo-kroepcke-eingangsrechnungen@acribo.com"
           },
           "matchingColumns": [],
@@ -1926,21 +1926,21 @@
           "conditions": [
             {
               "keyName": "attachment_id",
-              "keyValue": "={{ $json.attachment_id }}"
+              "keyValue": "={{ $('Evaluate OCR & Route').item.json.attachment_id }}"
             }
           ]
         },
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
-            "attachment_id": "={{ $json.attachment_id }}",
-            "mail_id": "={{ $json.mail_id || $('Get a message').item.json.id }}",
-            "file_name": "={{ $json.fileName || $json.originalFileName }}",
+            "attachment_id": "={{ $('Evaluate OCR & Route').item.json.attachment_id }}",
+            "mail_id": "={{ $('Evaluate OCR & Route').item.json.mail_id || $('Get a message').item.json.id }}",
+            "file_name": "={{ $('Evaluate OCR & Route').item.json.fileName || $('Evaluate OCR & Route').item.json.originalFileName || '' }}",
             "subject": "={{ $('Get a message').item.json.subject }}",
             "from": "={{ $('Get a message').item.json.from }}",
             "hasAttachments": "={{ $('Get a message').item.json.hasAttachments }}",
-            "ocr_status": "={{ $json.ocr_status || ($json.ocrFailed ? 'failed' : 'success') }}",
-            "fallback_reason": "={{ $json.fallbackReason || '' }}",
+            "ocr_status": "={{ $('Evaluate OCR & Route').item.json.ocr_status || ($('Evaluate OCR & Route').item.json.ocrFailed ? 'failed' : 'success') }}",
+            "fallback_reason": "={{ $('Evaluate OCR & Route').item.json.fallbackReason || '' }}",
             "forward_to": "acribo-bunke-eingangsrechnungen@acribo.com"
           },
           "matchingColumns": [],
@@ -2064,21 +2064,21 @@
           "conditions": [
             {
               "keyName": "attachment_id",
-              "keyValue": "={{ $json.attachment_id }}"
+              "keyValue": "={{ $('Evaluate OCR & Route').isExecuted ? $('Evaluate OCR & Route').item.json.attachment_id : $('Convert attachments to seperate items').item.json.attachment_id }}"
             }
           ]
         },
         "columns": {
           "mappingMode": "defineBelow",
           "value": {
-            "attachment_id": "={{ $json.attachment_id }}",
-            "mail_id": "={{ $json.mail_id || $('Get a message').item.json.id }}",
-            "file_name": "={{ $json.fileName || $json.originalFileName }}",
+            "attachment_id": "={{ $('Evaluate OCR & Route').isExecuted ? $('Evaluate OCR & Route').item.json.attachment_id : $('Convert attachments to seperate items').item.json.attachment_id }}",
+            "mail_id": "={{ $('Evaluate OCR & Route').isExecuted ? ($('Evaluate OCR & Route').item.json.mail_id || $('Get a message').item.json.id) : ($('Convert attachments to seperate items').item.json.mail_id || $('Get a message').item.json.id) }}",
+            "file_name": "={{ $('Evaluate OCR & Route').isExecuted ? ($('Evaluate OCR & Route').item.json.fileName || $('Evaluate OCR & Route').item.json.originalFileName || '') : ($('Convert attachments to seperate items').item.json.fileName || '') }}",
             "subject": "={{ $('Get a message').item.json.subject }}",
             "from": "={{ $('Get a message').item.json.from }}",
             "hasAttachments": "={{ $('Get a message').item.json.hasAttachments }}",
-            "ocr_status": "={{ $json.ocr_status || ($json.ocrFailed ? 'failed' : 'success') }}",
-            "fallback_reason": "={{ $json.fallbackReason || '' }}",
+            "ocr_status": "={{ $('Evaluate OCR & Route').isExecuted ? ($('Evaluate OCR & Route').item.json.ocr_status || ($('Evaluate OCR & Route').item.json.ocrFailed ? 'failed' : 'success')) : 'failed' }}",
+            "fallback_reason": "={{ $('Evaluate OCR & Route').isExecuted ? ($('Evaluate OCR & Route').item.json.fallbackReason || '') : ($('Convert attachments to seperate items').item.json.fallbackReason || 'no_valid_attachment') }}",
             "forward_to": "fi@acribo.com"
           },
           "matchingColumns": [],
