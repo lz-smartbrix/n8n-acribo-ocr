@@ -256,6 +256,37 @@
       }
     },
     {
+      "parameters": {
+        "toRecipients": "fi@acribo.com",
+        "subject": "=Smartbrix OCR Wochenreport KW ={{ $now.minus({ weeks: 1 }).weekNumber }}",
+        "additionalFields": {
+          "attachments": {
+            "attachments": [
+              {
+                "binaryPropertyName": "data"
+              }
+            ]
+          }
+        },
+        "bodyContent": "Anbei der wöchentliche OCR-Report für Acribo Eingangsrechnungen.\n\nDer Report enthält pro Anhang eine Zeile (neue Spalte: Anhang-ID) sowie eine Zusammenfassung nach Ziel-Postfach und Fallback-Gründen.\n\nBerichtszeitraum: Kalenderwoche ={{ $now.minus({ weeks: 1 }).weekNumber }}"
+      },
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 2,
+      "position": [
+        416,
+        256
+      ],
+      "id": "80277ad7-5c9c-446f-b195-0d03e42cc8d5",
+      "name": "Send to fi@acribo.com",
+      "webhookId": "fe077bdb-ca7f-4984-ae25-91acf6d986e7",
+      "credentials": {
+        "microsoftOutlookOAuth2Api": {
+          "id": "Pydw2OiP5zm2Xqv9",
+          "name": "acribo-ocr@smartbrix.io"
+        }
+      }
+    },
+    {
       "parameters": {},
       "type": "n8n-nodes-base.manualTrigger",
       "typeVersion": 1,
@@ -311,6 +342,11 @@
           },
           {
             "node": "Send to Cosima Kröger",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send to fi@acribo.com",
             "type": "main",
             "index": 0
           }
