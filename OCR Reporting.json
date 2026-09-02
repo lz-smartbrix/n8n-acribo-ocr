@@ -27,6 +27,7 @@
           "cachedResultName": "n8n_invoice_ocr_reporting",
           "cachedResultUrl": "/projects/OrX0COEJWZYXeBir/datatables/3EZHkYswDkV3030Y"
         },
+        "matchType": "allConditions",
         "filters": {
           "conditions": [
             {
@@ -164,6 +165,7 @@
           "cachedResultName": "n8n_invoice_ocr_reporting",
           "cachedResultUrl": "/projects/OrX0COEJWZYXeBir/datatables/3EZHkYswDkV3030Y"
         },
+        "matchType": "allConditions",
         "filters": {
           "conditions": [
             {
